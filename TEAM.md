@@ -95,6 +95,7 @@ ChatGPT hỗ trợ soạn tài liệu, thiết kế metric và ca kiểm thử, 
 - `--adhoc` đơn quà `O-1026`/`C-10` ở mốc `after`: `GỬI HÃNG` chỉ còn `order_id`, `parcel_id`, `district`, `delay_days`.
 - Vòng 2: `R-S7-grade-20261118-173953-414377` (after S7 `R-S7-after-20261118-173952-414377`, bộ nền `R-base-after-20261118-173952-414377`): `pii_leaks` 30 → 0, `5 regression ✅`, `6 monitor ✅`; base `R-S7-before-20261118-173955-414377` dùng cho C3.3, C4, câu 3.3.
 - Commit P4: `c0c389a` (Phiếu B B4, B5, B6, B7.5, B7.6; `config/operating_gates.json` mục `operations`, `legal`).
+- Commit P4 vòng 2: `d5fb912` (Phiếu C C3.3, C4, C5 câu 3.3, C9, C10, C11; `submission/submission.json`).
 
 ### Exit ticket
 
