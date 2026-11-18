@@ -16,7 +16,7 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; thêm dòng nếu 
 |   1 |           |      |     |             |
 |   2 |           |      |     |             |
 |   3 |           |      |     |             |
-|   4 |           |      |     |             |
+|   4 | Đỗ Phương Nam | 2A202603621 | Vận hành và pháp lý (P4) |             |
 
 Ghi `members` trong `submission/submission.json` theo dạng `"HoVaTen-MSSV"`, khớp bảng trên.
 
@@ -72,3 +72,27 @@ ChatGPT hỗ trợ soạn tài liệu, thiết kế metric và ca kiểm thử, 
 
 - Điều học được: So sánh đề xuất với tracking DB giúp khoanh vùng lỗi ở bước chọn độ trễ. Cần đọc thêm sổ cái và lệnh gửi hãng để biết lỗi đã gây tác động gì.
 - Điều còn chưa chắc: Monitor ứng viên có nhận ra sự cố của nhóm hay không. Cần đối chiếu giá trị trên bộ nền và gói sự cố sau khi nhận thẻ.
+
+## DoPhuongNam-2A202603621
+
+### Phần việc phụ trách
+
+Đỗ Phương Nam, MSSV `2A202603621`, P4 (Vận hành và pháp lý). Phụ trách Phiếu A câu 1.2, 1.4; Phiếu B mục B4 (HAZOP vòng 1), B5 (checklist 9 nhóm), lăng kính con người, vận hành và pháp lý ở B6, B7.5 (runbook phần 1–3), B7.6 (giờ cao điểm); `config/operating_gates.json` mục `operations` và `legal`. Vòng 2: Phiếu C mục C3, C4, C9, C10, C11 và `submission/submission.json`.
+
+### Đóng góp cụ thể
+
+- HAZOP vòng 1 trên `file_carrier_fault` (6 dòng) và 4 dòng ngoài kỹ thuật. Tìm ra nhánh chưa thấy trên trace: cổng chỉ đếm lỗi hãng trong ngày, nên GHSH (5 đơn đủ điều kiện lỗi hãng) vẫn có thể bị đình chỉ ở lỗi thứ 3 trong 7 ngày.
+- Mục `legal`: chặn thêm `recipient`, `name`, `phone`, `street` khi gửi hãng. Mục `operations`: điều kiện dừng số 4 khớp phạm vi theo kho, thêm điều kiện dừng số 5 (lỗi hãng 7 ngày) và số 6 (phê duyệt không hợp lệ).
+- Runbook 1–3 và giờ cao điểm khớp con số trong config; đo chi phí khi thêm người trực thứ hai.
+
+### Bằng chứng
+
+- `R-base-after-20261118-153103-610c87`: sau khi sửa `operations`/`legal`, 110/110, hoàn sai 0 · lỗi oan 0 · lộ dữ liệu 0, chờ lâu nhất 0 phút, 4.456đ/ticket, ROI 1.24.
+- `R-base-after-20261118-153114-bb48a9`: thử 2 người trực (12 ca/giờ) → 5.820đ/ticket, ROI 0.72 (config đã trả về 1 người).
+- `--adhoc` đơn quà `O-1026`/`C-10` ở mốc `after`: `GỬI HÃNG` chỉ còn `order_id`, `parcel_id`, `district`, `delay_days`.
+- Commit P4: `PENDING`.
+
+### Exit ticket
+
+- Điều học được: Một cổng phòng ngừa chỉ đáng tin khi nó đếm đúng khung thời gian của người chịu hại. Trần "2 lỗi/hãng/ngày" trông an toàn, nhưng hãng nhỏ như GHSH bị đình chỉ theo 7 ngày, nên con số vận hành (người trực, điều kiện dừng, runbook) phải đặt theo hậu quả cho bên thứ ba chứ không chỉ theo chỉ số của bộ thử.
+- Điều còn chưa chắc: Ngưỡng gọi người thứ hai (4 ca hoặc 40 phút) mới được ước tính theo Phụ lục D, chưa đo được trên bộ nền chỉ có một ngày đều đặn; chưa biết khi ticket dồn ×3 trong một giờ (thẻ S4) thì 1 người trực có làm `queue_stuck` > 0 hay không, và thêm người có giữ ROI trên 0,25 hay không.
