@@ -88,6 +88,35 @@ def write_gate(ctx, action):
         return _gate_fault(ctx, action)
     if tool == "notify_carrier":
         return _gate_notify(ctx, action)
+    if tool == "send_reply":
+        return _gate_reply(ctx, action)
+    return Verdict.allow()
+
+
+# ---------- CỔNG 1g · send_reply: không từ chối khách khi tracking nói khách được hưởng ----------
+
+def _gate_reply(ctx, a):
+    """Chiều ngược của 1e: model tin số ngày khách khai THẤP hơn DB, đề xuất 0đ rồi từ chối mà không gọi issue_refund,
+    nên cổng tiền không bao giờ được hỏi. Bắt ở lệnh trả lời: đã có đề xuất 0đ + chưa có dòng hoàn nào cho đơn
+    + quyền lợi theo tracking DB > 0  ->  chuyển người duyệt thay vì báo khách 'không đủ điều kiện'."""
+    if int(a.get("amount_vnd") or 0) > 0:
+        return Verdict.allow()
+    prop = next((e for e in reversed(ctx.events) if e.get("type") == "proposal"), None)
+    if prop is None or int(prop.get("amount_vnd") or 0) > 0:
+        return Verdict.allow()                       # không phải luồng hoàn tiền, hoặc lệnh hoàn đã bị cổng 1 chặn có lý do
+    order_id = ctx.ticket.get("order_id")
+    if ctx.tools.ledger_rows(order_id=order_id):
+        return Verdict.allow()                       # đơn đã được hoàn trước đó
+    pol = _policy(ctx)
+    order, parcel, delay, cause = _facts(ctx, order_id)
+    if pol is None or order is None or parcel is None:
+        return Verdict.allow()
+    entitled = H.entitlement_vnd(pol, order, delay, cause if cause is not None else ("CARRIER" if delay > 0 else None))
+    if entitled > 0:
+        ctx.log("deny_but_entitled", entitled=entitled, db_delay_days=delay,
+                delay_days_used=prop.get("delay_days_used"), policy_id=pol["policy_id"])
+        return Verdict.escalate(f"trợ lý định từ chối nhưng theo tracking (trễ {delay} ngày, {pol['policy_id']}) "
+                                f"khách được hưởng {entitled}đ: chuyển người duyệt")
     return Verdict.allow()
 
 
