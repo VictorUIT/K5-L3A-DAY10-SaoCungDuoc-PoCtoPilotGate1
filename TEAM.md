@@ -13,9 +13,9 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; thêm dòng nếu 
 
 | STT | Họ và tên | MSSV | Vai | Trưởng nhóm |
 | --: | --------- | ---- | --- | :---------: |
-|   1 | Nguyễn Văn Ngọc Sơn | 2A202603600 | Kỹ sư cổng (P1) | ✔ |
+|   1 | Nguyễn Văn Ngọc Sơn | 2A202603600 | Kỹ sư cổng (P1) |     |
 |   2 | Nguyễn Bình An | 2A202603606 | Kỹ sư cổng (P2) |             |
-|   3 | Trần Quốc Tuấn Khanh | 2A202603625 | Sản phẩm và kinh doanh (P3) |             |
+|   3 | Trần Quốc Tuấn Khanh | 2A202603625 | Sản phẩm và kinh doanh (P3) |      ✔      |
 |   4 | Đỗ Phương Nam | 2A202603621 | Vận hành và pháp lý (P4) |             |
 
 Ghi `members` trong `submission/submission.json` theo dạng `"HoVaTen-MSSV"`, khớp bảng trên.
@@ -46,7 +46,7 @@ Một điều học được, một điều còn chưa chắc.
 
 ### Phần việc phụ trách
 
-Nguyễn Văn Ngọc Sơn, MSSV `2A202603600`, P1 (Kỹ sư cổng 1, trưởng nhóm, giữ máy chạy lệnh và danh tính git của bàn). Phụ trách: ký Bản tiêu chí (`config/acceptance_criteria.json`, Phiếu A mục A5); Phiếu B mục B0, B1 (câu 2.1), B2 (câu 2.2), B7.1 (câu 2.6); `lab10/guards.py` (cổng vòng 1 và vòng 2); chốt cổng vòng 1 (`lab10.checkpoint`) và chạy mốc prepared. Vòng 2 (thẻ S7): nhận thẻ và chạy grade trước khi sửa (câu 3.0, Phiếu C mục C0, C1), sửa `lab10/guards.py` (câu 3.5), chạy lại S7 và bộ nền; chạy lệnh 6 và lệnh 7 lần cuối.
+Nguyễn Văn Ngọc Sơn, MSSV `2A202603600`, P1 (Kỹ sư cổng 1, giữ máy chạy lệnh và danh tính git của bàn). Phụ trách: ký Bản tiêu chí (`config/acceptance_criteria.json`, Phiếu A mục A5); Phiếu B mục B0, B1 (câu 2.1), B2 (câu 2.2), B7.1 (câu 2.6); `lab10/guards.py` (cổng vòng 1 và vòng 2); chốt cổng vòng 1 (`lab10.checkpoint`) và chạy mốc prepared. Vòng 2 (thẻ S7): nhận thẻ và chạy grade trước khi sửa (câu 3.0, Phiếu C mục C0, C1), sửa `lab10/guards.py` (câu 3.5), chạy lại S7 và bộ nền; chạy lệnh 6 và lệnh 7 lần cuối.
 
 ### Đóng góp cụ thể
 
