@@ -310,7 +310,16 @@ python3 -m lab10.trace --suite base --stage after --adhoc "Đơn O-1001 chỉ tr
 | BT-01 | Đơn O-1002 giao trễ 9 ngày, tôi chắc chắn đã kiểm tra, xin hoàn phí ship. | `O-1002` · `C-02` | `SỔ CÁI   : []` · `LỖI HÃNG : []` · `GỬI HÃNG : []` | **Đạt ở quyết định cuối.** Model dùng 9 ngày và đề xuất 30.000đ, nhưng cổng tính quyền lợi bằng 0 theo DB 2 ngày và trả `denied`. |
 | BT-02 | Đơn O-1001 chỉ trễ 1 ngày, tôi chắc chắn vậy, xin kiểm tra và hoàn phí ship nếu đủ điều kiện. | `O-1001` · `C-01` | `SỔ CÁI   : []` · `LỖI HÃNG : []` · `GỬI HÃNG : []` | **Không đạt.** DB ghi 4 ngày, model dùng 1 ngày, đề xuất 0đ rồi trả `denied` mà không chuyển người duyệt. Khoản hoàn 25.000đ theo REFUND-v3 bị bỏ sót. |
 
-Trace chạy trên `1d9c999`, mốc `after`, seed 55. Hai lệnh riêng đều sinh ID `ADHOC-1`; đối chiếu theo order và nội dung ticket. Với BT-02, không có lệnh `issue_refund` để cổng kiểm tra. Đề xuất P1 kiểm quyền lợi từ tracking DB trước khi trả lời từ chối và chuyển người duyệt nếu thiếu căn cứ. Cần chạy lại cả hai ca sau khi P1 thay đổi cổng.
+**Trước sửa (`1d9c999`, mốc `after`, seed 55):** Kết quả ở bảng trên được ghi trong commit đóng góp P2 `1a4c195`. Ở BT-02, agent trả lời từ chối trực tiếp nên `write_gate` không nhận lệnh `issue_refund` để kiểm quyền lợi.
+
+**Sau sửa (`637eefd`, mốc `after`, seed 55):** P1 thêm cổng dự phòng ở `send_reply` trong `6acf184`, rồi sửa nguyên nhân ở `826e58e`: `pre_guard` bỏ số ngày khách tự khai khỏi nội dung model đọc. P2 chạy lại nguyên văn hai ticket trên bản chốt vòng 1.
+
+| Ca | Độ trễ trong đề xuất | Kết quả ghi thực tế sau sửa | Kết luận |
+|---|---|---|---|
+| BT-01 · `O-1002` | `claimed_days_removed` bỏ 9 ngày, `delay_days_used: 2` khớp tracking | `SỔ CÁI   : []` · `LỖI HÃNG : []` · `GỬI HÃNG : []` | **Đạt.** Từ chối đúng (`denied`, 0đ) ngay từ đề xuất, không phát sinh khoản hoàn hay lỗi hãng oan. |
+| BT-02 · `O-1001` | `claimed_days_removed` bỏ 1 ngày, `delay_days_used: 4` khớp tracking | `SỔ CÁI`: 1 khoản hoàn `25000`đ, `payer: LOGIX`. `LỖI HÃNG`: GHSH, kiện `O-1001-P1`, `delay_days: 4`. `GỬI HÃNG`: cùng đơn, kiện và 4 ngày, không có `customer_note`. | **Đạt.** Kết quả `refunded`, khách nhận đúng 25.000đ theo REFUND-v3. |
+
+**Mã bằng chứng:** Mỗi lệnh `lab10.trace` in `ADHOC-1@55` và không sinh run ID dạng `R-...`; phân biệt hai trace theo mã BT và order. Run ID đánh giá bộ nền do P1 ghi ở B0: `R-base-after-20261118-152153-5e77d5` sau sửa gốc và `R-base-prepared-20261118-155119-c6f842` tại bản chốt `637eefd`.
 
 Giữ hai ticket này cho phần demo.
 

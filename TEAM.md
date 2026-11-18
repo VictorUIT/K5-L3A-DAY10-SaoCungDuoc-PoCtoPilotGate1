@@ -59,9 +59,9 @@ Nguyễn Bình An, MSSV `2A202603606`, P2 (Kỹ sư cổng). Phụ trách A2 câ
 
 ### Bằng chứng
 
-- Đã đối chiếu offline metric A2 với nội dung ở commit `1d9c999`. Chờ P4 xác nhận một telemetry production dùng chung ở câu 1.4. B6 kỹ thuật và B7.2 đã điền trên Phiếu B. Commit/PR P2: `PENDING`.
+- Đã đối chiếu offline metric A2 với nội dung ở commit `1d9c999`. Chờ P4 xác nhận một telemetry production dùng chung ở câu 1.4. Commit P2 `1a4c195` tích hợp mục cá nhân và các đóng góp ở B2, B6 kỹ thuật, B7.2 và B7.3.
 - B2: đã tái chạy trace `T-002@55` ở `base` và `after`. Baseline P1 ghi ở B0 là `R-base-before-20261118-120241-e347b3`, chờ bản report và trace của run đó để đối chiếu toàn bộ.
-- B7.3: đã chạy BT-01 và BT-02 ở `after`, seed `55`. Cổng chặn khoản hoàn oan ở BT-01. BT-02 vẫn từ chối sai quyền lợi khi khách khai ít hơn tracking DB.
+- B7.3: trên `1d9c999`, BT-02 phát hiện agent từ chối sai quyền lợi 25.000đ khi khách khai ít hơn tracking DB. P1 thêm cổng dự phòng `send_reply` ở `6acf184`, rồi sửa nguyên nhân ở `826e58e` bằng cách bỏ số ngày tự khai trước khi model đọc. P2 tái chạy hai ca trên `637eefd`, mốc `after`, seed 55: BT-01 từ chối đúng, BT-02 hoàn đúng 25.000đ và ghi lỗi GHSH theo tracking 4 ngày. Run ID đối chiếu ở B0: `R-base-after-20261118-152153-5e77d5` và `R-base-prepared-20261118-155119-c6f842`.
 - Thẻ, grade report và `ticket@seed` cho C2/C6/C8: `PENDING Sx`.
 
 ### Sử dụng AI
