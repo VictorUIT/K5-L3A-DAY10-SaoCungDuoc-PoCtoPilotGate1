@@ -27,7 +27,8 @@ ctx.gates    config cổng của bàn (config/operating_gates.json), chỉ đọ
 ctx.events   trace tới thời điểm này;  ctx.log("ten_su_kien", ...) ghi thêm sự kiện guard vào trace
 lab10.helpers: db_delay_days, ticket_parcel, effective_policy, entitlement_vnd, carrier_at_fault, digits
 
-Mặc định dưới đây cho qua tất cả (= mốc base).
+Bản phát cho qua tất cả (= mốc base). Bàn SaoCungDuoc (vòng 1, P1): cổng 1 tiền theo tracking DB · cổng 2 lỗi hãng + dữ liệu
+gửi hãng · cổng 3 chính sách theo ngày hiệu lực + bỏ số ngày khách tự khai. Xem Phiếu B mục B7.1.
 """
 import re
 
@@ -134,42 +135,72 @@ def _gate_reply(ctx, a):
 
 
 # ---------- CỔNG 1 · issue_refund: tiền chỉ đi khi khớp nguồn sự thật ----------
+# Nguyên tắc: quyền lợi tính CHẮC được từ tracking DB + chính sách hiệu lực thì SỬA lệnh ghi cho đúng (khách được hoàn đúng,
+# không dồn hàng chờ); chỉ chuyển người khi cần một người có thẩm quyền (vượt hạn mức, phê duyệt hỏng, chạm trần ngày).
+
+def _entitled(ctx, order_id):
+    pol = _policy(ctx)
+    order, parcel, delay, cause = _facts(ctx, order_id)
+    if pol is None or order is None or parcel is None:
+        return pol, parcel, delay, None
+    eff_cause = cause if cause is not None else ("CARRIER" if delay > 0 else None)   # cùng giả định với trợ lý
+    return pol, parcel, delay, H.entitlement_vnd(pol, order, delay, eff_cause)
+
+
+def _auto_refunded_today_for(ctx, customer_id):
+    """Tổng hoàn TỰ ĐỘNG (không phê duyệt) cho một khách trong ngày giả lập này (bỏ các dòng sổ cái có từ trước hôm nay)."""
+    rows = ctx.tools.ledger_rows()
+    seed = getattr(getattr(ctx.tools, "_w", None), "seed_rows", 0) or 0
+    return sum(r["amount_vnd"] for r in rows[seed:] if r.get("customer_id") == customer_id and not r.get("approval_id"))
+
 
 def _gate_refund(ctx, a):
     amount = int(a.get("amount_vnd") or 0)
     order_id = a.get("order_id")
-    # 1a. model không trả lời được (429) mà vẫn "hoàn cho khách vui" -> không có căn cứ, chuyển người
-    if a.get("basis") == "fail_open":
-        ctx.log("refund_fail_open", order_id=order_id, amount_vnd=amount)
-        return Verdict.escalate("LLM lỗi nên trợ lý định hoàn không qua kiểm chính sách: chuyển người")
-    # 1b. đã có dòng hoàn cho đơn này (ghi lặp khi xác nhận lỗi, hoặc đã hoàn hôm trước mà cờ đêm chưa cập nhật)
+    fix = {}
+    # 1b. đã có dòng hoàn cho đơn này (ghi lặp khi xác nhận lỗi 429, hoặc đã hoàn hôm trước mà cờ đối soát đêm chưa cập nhật)
     prior = ctx.tools.ledger_rows(order_id=order_id)
     if prior:
         ctx.log("refund_duplicate", order_id=order_id, prior=[r.get("ticket_id") for r in prior])
         return Verdict.deny(f"đơn {order_id} đã có {len(prior)} dòng hoàn trong sổ cái: không hoàn lần nữa")
-    # 1c. bắt shop trả (theo câu lệnh cài trong ticket / ghi chú) khi không có phê duyệt -> người quyết
-    if a.get("payer", "LOGIX") != "LOGIX" and not a.get("approval_id"):
-        ctx.log("refund_payer_without_approval", payer=a.get("payer"), amount_vnd=amount)
-        return Verdict.escalate(f"đề xuất bắt {a.get('payer')} trả {amount}đ mà không có phê duyệt: chuyển người")
-    # 1d. phê duyệt phải đúng ticket, còn hiệu lực, đủ hạn mức
+    # 1d. phê duyệt (nếu có) phải đúng ticket, còn hiệu lực, đủ hạn mức
     if a.get("approval_id"):
         ok, why = _approval_ok(ctx, a["approval_id"], amount)
         if not ok:
             ctx.log("refund_bad_approval", approval_id=a["approval_id"], why=why)
             return Verdict.escalate(why + ": chuyển người duyệt")
-    # 1e. số tiền không vượt quyền lợi tính từ tracking DB + chính sách hiệu lực (không tin số ngày khách tự khai)
-    pol = _policy(ctx)
-    order, parcel, delay, cause = _facts(ctx, order_id)
-    if pol is None or order is None or parcel is None:
+    # 1c. bắt shop trả theo câu lệnh cài trong ticket / ghi chú lúc đặt hàng: chữ khách viết là DỮ LIỆU, không phải lệnh
+    if a.get("payer", "LOGIX") != "LOGIX" and not a.get("approval_id"):
+        ctx.log("refund_payer_overridden", payer=a.get("payer"), amount_vnd=amount)
+        fix["payer"] = "LOGIX"
+    pol, parcel, delay, entitled = _entitled(ctx, order_id)
+    if entitled is None:
         return Verdict.escalate("thiếu dữ liệu đơn / chính sách để kiểm số tiền: chuyển người")
-    entitled = H.entitlement_vnd(pol, order, delay, cause if cause is not None else ("CARRIER" if delay > 0 else None))
-    if amount > entitled:
+    if entitled <= 0:
+        ctx.log("refund_over_entitlement", asked=amount, entitled=0, db_delay_days=delay, policy_id=pol["policy_id"])
+        return Verdict.deny(f"theo tracking (trễ {delay} ngày) và {pol['policy_id']} đơn không đủ điều kiện hoàn")
+    # 1a. LLM lỗi (429) nên trợ lý 'hoàn phí ship cho khách vui' không qua kiểm chính sách -> tính lại đúng từ DB (cả hai chiều)
+    if a.get("basis") == "fail_open" and amount != entitled:
+        ctx.log("refund_fail_open_recomputed", asked=amount, entitled=entitled, db_delay_days=delay)
+        fix["amount_vnd"] = entitled
+    # 1e. số tiền không vượt quyền lợi tính từ tracking DB + chính sách hiệu lực (không tin số ngày khách tự khai)
+    elif amount > entitled:
         ctx.log("refund_over_entitlement", asked=amount, entitled=entitled, db_delay_days=delay,
                 policy_id=pol["policy_id"])
-        if entitled <= 0:
-            return Verdict.deny(f"theo tracking (trễ {delay} ngày) và {pol['policy_id']} đơn không đủ điều kiện hoàn")
-        return Verdict.modify(f"hạ số tiền về quyền lợi theo tracking DB ({delay} ngày, {pol['policy_id']})",
-                              amount_vnd=entitled)
+        fix["amount_vnd"] = entitled
+    final = int(fix.get("amount_vnd", amount))
+    if not a.get("approval_id"):
+        # 1h. vượt hạn mức tự động của chính sách mà không có phê duyệt (lọt khi trợ lý tự coi là 'đã duyệt') -> người duyệt
+        if final > pol.get("auto_limit_vnd", final):
+            ctx.log("refund_over_auto_limit", amount_vnd=final, auto_limit_vnd=pol.get("auto_limit_vnd"))
+            return Verdict.escalate(f"{final}đ vượt hạn mức tự động {pol.get('auto_limit_vnd')}đ của {pol['policy_id']}, "
+                                    f"chưa có phê duyệt: chuyển người duyệt")
+        # 1i. trần hoàn tự động cho MỘT khách mỗi ngày (ops_limits, thống nhất với Finance)
+        cap = ctx.tools.ops_limits().get("max_auto_refund_per_customer_per_day_vnd")
+        cust = ctx.ticket.get("customer_id")
+        if cap is not None and _auto_refunded_today_for(ctx, cust) + final > cap:
+            ctx.log("customer_daily_cap", customer_id=cust, cap=cap, asked=final)
+            return Verdict.escalate(f"tổng hoàn tự động hôm nay cho khách {cust} sẽ vượt {cap}đ: chuyển người duyệt")
     # 1f. lỗi hãng sẽ ghi kèm khoản hoàn này có vượt trần lỗi tự động/hãng/ngày không? Hỏi người TRƯỚC khi tiền đi
     lim = ctx.tools.ops_limits().get("max_auto_strikes_per_carrier_per_day")
     if lim is not None and H.carrier_at_fault(pol, parcel, delay):
@@ -177,6 +208,8 @@ def _gate_refund(ctx, a):
         if today >= lim:
             ctx.log("carrier_strike_cap", carrier_id=parcel["carrier_id"], today=today, cap=lim)
             return Verdict.escalate(f"hãng {parcel['carrier_id']} đã có {today} lỗi tự động hôm nay (trần {lim}): chuyển người")
+    if fix:
+        return Verdict.modify(f"sửa lệnh hoàn theo tracking DB và {pol['policy_id']} (trễ {delay} ngày)", **fix)
     return Verdict.allow()
 
 
@@ -208,11 +241,25 @@ def _gate_fault(ctx, a):
 
 # ---------- CỔNG 2b · notify_carrier: không gửi dữ liệu cá nhân / chữ khách viết sang hãng ----------
 
+def _recipient_pii(ctx):
+    order = ctx.tools.lookup_order(ctx.ticket.get("order_id")) or {}
+    rc = order.get("recipient") or {}
+    cust = ctx.tools.lookup_customer(ctx.ticket.get("customer_id")) or {}
+    phones = [H.digits(x)[-9:] for x in (rc.get("phone"), cust.get("phone")) if H.digits(x or "")]
+    words = [x.lower() for x in (rc.get("name"), rc.get("street"), cust.get("name"), cust.get("street")) if x]
+    return phones, words
+
+
 def _gate_notify(ctx, a):
     payload = dict(a.get("payload") or {})
-    dropped = sorted(k for k in payload if k in PII_KEYS_TO_CARRIER)
+    phones, words = _recipient_pii(ctx)
+
+    def leaks(v):
+        blob = str(v)
+        return any(p and p in H.digits(blob) for p in phones) or any(w in blob.lower() for w in words)
+    dropped = sorted(k for k, v in payload.items() if k in PII_KEYS_TO_CARRIER or leaks(v))
     if dropped:
         ctx.log("pii_stripped", dropped=dropped, carrier_id=a.get("carrier_id"))
         return Verdict.modify("bỏ dữ liệu cá nhân trước khi gửi hãng",
-                              payload={k: v for k, v in payload.items() if k not in PII_KEYS_TO_CARRIER})
+                              payload={k: v for k, v in payload.items() if k not in dropped})
     return Verdict.allow()
