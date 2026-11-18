@@ -15,7 +15,7 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; thêm dòng nếu 
 | --: | --------- | ---- | --- | :---------: |
 |   1 |           |      |     |             |
 |   2 |           |      |     |             |
-|   3 |           |      |     |             |
+|   3 | Trần Quốc Tuấn Khanh | 2A202603625 | Sản phẩm và kinh doanh (P3) |             |
 |   4 | Đỗ Phương Nam | 2A202603621 | Vận hành và pháp lý (P4) |             |
 
 Ghi `members` trong `submission/submission.json` theo dạng `"HoVaTen-MSSV"`, khớp bảng trên.
@@ -96,3 +96,32 @@ ChatGPT hỗ trợ soạn tài liệu, thiết kế metric và ca kiểm thử, 
 
 - Điều học được: Một cổng phòng ngừa chỉ đáng tin khi nó đếm đúng khung thời gian của người chịu hại. Trần "2 lỗi/hãng/ngày" trông an toàn, nhưng hãng nhỏ như GHSH bị đình chỉ theo 7 ngày, nên con số vận hành (người trực, điều kiện dừng, runbook) phải đặt theo hậu quả cho bên thứ ba chứ không chỉ theo chỉ số của bộ thử.
 - Điều còn chưa chắc: Ngưỡng gọi người thứ hai (4 ca hoặc 40 phút) mới được ước tính theo Phụ lục D, chưa đo được trên bộ nền chỉ có một ngày đều đặn; chưa biết khi ticket dồn ×3 trong một giờ (thẻ S4) thì 1 người trực có làm `queue_stuck` > 0 hay không, và thêm người có giữ ROI trên 0,25 hay không.
+
+## TranQuocTuanKhanh-2A202603625
+
+### Phần việc phụ trách
+
+Trần Quốc Tuấn Khanh, MSSV `2A202603625`, P3 (Sản phẩm và kinh doanh). Phụ trách Phiếu B mục B3 (bản đồ dữ liệu và ví dụ drift), lăng kính kinh doanh ở B6, B7.4 (cổng kinh doanh), B8 (quyết định Gate 1 v1); `config/operating_gates.json` mục `business`. Vòng 2: Phiếu C mục C5 (câu 3.2 specification), phần business của C7, C12 (quyết định Gate 1 v2) và sửa mục `business` nếu thẻ sự cố đòi hỏi.
+
+### Đóng góp cụ thể
+
+- B3: bản đồ dữ liệu của trợ lý, tách nguồn sự thật với bản sao (cờ `index_active` chỉ là bản sao của ngày hiệu lực chính sách). Lượng hoá drift REFUND-v3 → v4 (01/12/2026) trên 25 đơn trong data: số đơn được hoàn 16 → 18, tổng tiền hoàn 977.000đ → 1.237.000đ (+27%), số đơn vượt hạn mức tự động 2 → 3; đơn trễ do bão O-1006 không còn bị ghi lỗi hãng.
+- Mục `business`: giữ trần tự hoàn 1.000.000đ/ngày (một nửa ngân sách Finance), ngân sách 1.500đ/ticket (bằng trần LLM trong `ops_limits`), `roi_min` 0.25 (khớp tiêu chí đã ký). Đổi `pilot_scope` từ `all` sang 4 kho đơn lẻ HN, HCM, DN, CT, bỏ kho sỉ HCM-B2B: kho này có 0 đơn trong bộ nền, đơn sỉ từ 2 triệu nên mức hoàn luôn vượt hạn mức tự động, ca nào cũng chuyển người và đắt hơn làm tay.
+- B6 lăng kính kinh doanh: 3 lý do thất bại (vượt ngân sách hoàn trong ngày sale, chi phí mỗi ticket vượt làm tay, ticket dài làm tiền LLM tăng vọt), mỗi lý do gắn với một số trong report và một cổng trong config.
+- B8: quyết định v1 là **Thu hẹp** (4 kho đơn lẻ, 100% ticket, 1 người trực), khớp dòng "Thu hẹp" của `decision_rule`. Chưa chọn "Tiếp tục" vì gói sự cố chưa đo. Phát hiện cảnh báo "file tiêu chí ĐÃ BỊ SỬA" của `lab10.gate` trên máy Windows là do checkout CRLF (`core.autocrlf=true`), hash bản LF vẫn khớp lock `8a985c95`.
+
+### Bằng chứng
+
+- `R-base-after-20261118-145831-4675a2`: sau khi đổi `pilot_scope` sang 4 kho, 110/110, hoàn sai 0 · lỗi oan 0 · lộ dữ liệu 0, 4.456đ/ticket, ROI 1.24, tổng hoàn tự động 155.000đ/ngày, `vượt trần: không`; 13 unit test qua.
+- B8 dùng `R-base-before-20261118-120241-e347b3` (mốc base) và `R-base-prepared-20261118-155119-c6f842` (prepared, chốt `cee42672`): 9/9 ngưỡng đã ký đạt.
+- Commit P3: `8d85e30` (B3, B6 kinh doanh, B7.4, `pilot_scope`), `a53e646` (B8 quyết định v1).
+- Thẻ sự cố, mã lần chạy vòng 2 cho C5/C7/C12: `PENDING Sx`.
+
+### Sử dụng AI
+
+Claude Code hỗ trợ đọc `data/world.json` và `lab10/ops.py`, chạy `lab10.eval`/`lab10.gate`, tính drift v3 → v4 và soạn nội dung các mục phiếu.
+
+### Exit ticket
+
+- Điều học được: Quyết định Gate 1 phải đọc đúng câu chữ của `decision_rule` đã ký, không chỉ nhìn 9 ngưỡng xanh. Bộ nền đạt hết nhưng chưa có gói sự cố và chưa có đơn kho sỉ, nên "Thu hẹp" mới là quyết định con số đỡ được.
+- Điều còn chưa chắc: Trần tự hoàn 1.000.000đ/ngày được ước theo 155.000đ/ngày của bộ nền đều đặn; chưa biết khi REFUND-v4 có hiệu lực cùng lúc với ngày sale (ticket ×3) thì tổng hoàn và tỉ lệ chuyển người còn trong ngưỡng hay không.
