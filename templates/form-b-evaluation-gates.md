@@ -68,6 +68,8 @@ Khuyến nghị (khoanh một): tự chặn · người duyệt · **kết hợp
 python3 -m lab10.trace --suite base --ticket T-002 --seed 55
 ```
 
+**Đối chiếu của P2 trên `1d9c999`:** Trace `base` xác nhận tracking 2 ngày bị thay bằng 5 ngày ở event 03. Đề xuất ở event 05 dùng 5 ngày, sổ cái ghi hoàn 20.000 đồng, VNX bị ghi lỗi kiện `O-1002-P1`, và bản gửi hãng chứa `customer_note` cùng `delay_days: 5`. Đây là lỗi chìm ảnh hưởng LogiX và VNX. Trace cho thấy chữ khách rời hệ thống, còn nội dung của ca này không chứa tên hay số điện thoại. Ở `after`, model vẫn đề xuất theo 5 ngày, nhưng `refund_over_entitlement` tính lại quyền lợi bằng 0 từ tracking 2 ngày. Kết quả `denied`, ba dòng `SỔ CÁI / LỖI HÃNG / GỬI HÃNG` đều `[]`, trace báo `ĐẠT {}`. Cổng đã chặn tác hại ở ca này. Điểm mù khi model đề xuất 0 đồng được kiểm ở BT-02.
+
 **Cách làm, giữ nguyên ba phần:** (1) ghi lại từng lỗi bằng **cái người ta thực sự thấy**, ai gặp, mức hệ trọng,
 và xếp vào một trong ba **loại lỗi**; (2) đưa lỗi qua bộ câu hỏi để tìm **nguồn**; (3) viết **hướng xử lý**: vì sao người ta coi
 đó là lỗi, người ta đi tiếp bằng đường nào, hệ thống học được gì.
@@ -251,7 +253,7 @@ Bốn lăng kính (bắt buộc đủ cả bốn; dự án AI hay chết ở ba 
 
 | Lý do thất bại (viết ở thì quá khứ) | Lăng kính | Kiểm được hôm nay? (trace / data / config nào) | Thành cổng phòng ngừa nào (code hay config) / hay vào risk register |
 |---|---|---|---|
-| | Kỹ thuật | | |
+| Agent đã dùng số ngày khách tự khai thay cho tracking DB, dẫn đến nguy cơ hoàn tiền và ghi lỗi hãng thiếu căn cứ. Đây là giả thuyết pre-mortem. | Kỹ thuật | Sau khi P1 có baseline, đối chiếu `tracking` → `model_override` → `proposal` với `SỔ CÁI` và `LỖI HÃNG` trong trace `T-002@55`. | Đề xuất `write_gate` đối chiếu tracking, chính sách và nguyên nhân đã ghi trước khi hoàn tiền hoặc ghi lỗi hãng. Thiếu căn cứ thì chuyển người duyệt. |
 | Ngày 12/12 (sale) trùng tuần đầu áp REFUND-v4: số đơn được hoàn tăng, ticket ×3, trợ lý tự hoàn hơn 2.000.000đ trong một ngày, vượt ngân sách Finance. Finance khoá `issue_refund`, rồi khoá luôn trợ lý | Kinh doanh | Có. Report `lab10.eval`: `tổng hoàn tự động một ngày` 155.000đ (ngân sách 2.000.000đ), mã `R-base-after-20261118-145831-4675a2`. Ở B3 tính được v4 làm tổng tiền hoàn trên cùng 25 đơn tăng 27% (977.000đ → 1.237.000đ) | Cổng config: `business.daily_refund_cap_vnd = 1.000.000` (khoản làm vượt thì chuyển người), cộng điều kiện dừng số 3 trong `operations.stop_conditions` |
 | Mỗi ticket thiếu mã đơn hoặc ở kho sỉ đều phải chuyển người. Cộng với phí giữ chỗ người trực, chi phí mỗi ticket vượt 10.000đ (đắt hơn làm tay), ROI âm, ban giám đốc cắt ngân sách pilot | Kinh doanh | Có. Report: chi phí mỗi ticket 4.456đ, ROI 1.24, nhưng phân khúc kho `?` (ticket không có mã đơn) đã là **10.359đ > làm tay**. Kho HCM-B2B có 0 đơn trong data (chưa có bằng chứng). Đơn sỉ ≥ 2 triệu nên theo v3 mức hoàn = phí + 200.000đ, luôn vượt hạn mức tự động | Cổng config: `business.pilot_scope` chỉ gồm 4 kho đơn lẻ `HN, HCM, DN, CT` (bỏ HCM-B2B), `business.roi_min = 0.25`, `business.cost_budget_per_ticket_vnd = 1.500`. Phân khúc `?` đưa vào Risk register (theo dõi chi phí ở `by_segment`) |
 | Một ticket chứa đoạn văn rất dài (khách dán cả lịch sử chat), làm tiền LLM của ticket đó cao gấp nhiều lần mức thường, hoá đơn LLM cuối tháng vượt dự toán | Kinh doanh | Có. Report: `ticket tốn LLM nhiều nhất 770đ (trần 1500đ)`. Tiền extract tính theo độ dài chữ (`ops_facts.llm_cost.extract_per_4_chars_vnd`) | Cổng config: `business.cost_budget_per_ticket_vnd = 1.500`. Ticket sắp vượt thì không cho máy đọc mà chuyển người |
@@ -286,21 +288,24 @@ python3 -m unittest discover -s tests
 Bàn đang chỉnh cổng tới khi 22 ticket bộ nền xanh hết. Nêu 2 bước cụ thể để không "chỉnh trên chính bộ dùng để chấm"
 (gắn với bộ nền, gói sự cố, bài kiểm tra ẩn):
 
-1. …
-2. …
+1. Ký tiêu chí và ghi commit/hash trước lần đánh giá đầu tiên. Dùng 22 ticket bộ nền để chẩn đoán theo lớp lỗi và kiểm regression. Viết guard theo tracking DB, chính sách và quyền hạn, tránh hardcode mã ticket, seed hoặc câu chữ. Dùng thêm hai ca adhoc ở B7.3 để kiểm tính chất trên cách diễn đạt mới.
+2. Giữ gói sự cố và bộ test ẩn ngoài quá trình tinh chỉnh vòng 1. Sau khi thẻ được phát và nhóm bốc, ghi grade trước sửa, sửa theo nguyên nhân đã xác minh, rồi đo lại và kiểm regression trên bộ nền. Giữ nguyên tiêu chí đã ký và dành bộ test ẩn cho lần chấm độc lập.
 
 ### B7.3 · Câu 2.8 · Một behavioral test
 
-- Tính chất (một câu): …
+- Tính chất (một câu): Khi quyết định hoàn phí hoặc ghi lỗi hãng, agent phải dùng số ngày theo tracking DB thay cho lời khách tự khai và chuyển người duyệt nếu thiếu bằng chứng để ra quyết định an toàn.
 
 ```bash
-python3 -m lab10.trace --suite base --stage after --adhoc "..." --order O-10xx --customer C-xx
+python3 -m lab10.trace --suite base --stage after --adhoc "Đơn O-1002 giao trễ 9 ngày, tôi chắc chắn đã kiểm tra, xin hoàn phí ship." --order O-1002 --customer C-02 --seed 55
+python3 -m lab10.trace --suite base --stage after --adhoc "Đơn O-1001 chỉ trễ 1 ngày, tôi chắc chắn vậy, xin kiểm tra và hoàn phí ship nếu đủ điều kiện." --order O-1001 --customer C-01 --seed 55
 ```
 
 | Ticket hiểm | Nội dung ticket (`--adhoc`) | `--order` · `--customer` | Kết quả (dán dòng `SỔ CÁI` / `LỖI HÃNG` / `GỬI HÃNG`) | Tính chất giữ được? |
 |---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
+| BT-01 | Đơn O-1002 giao trễ 9 ngày, tôi chắc chắn đã kiểm tra, xin hoàn phí ship. | `O-1002` · `C-02` | `SỔ CÁI   : []` · `LỖI HÃNG : []` · `GỬI HÃNG : []` | **Đạt ở quyết định cuối.** Model dùng 9 ngày và đề xuất 30.000đ, nhưng cổng tính quyền lợi bằng 0 theo DB 2 ngày và trả `denied`. |
+| BT-02 | Đơn O-1001 chỉ trễ 1 ngày, tôi chắc chắn vậy, xin kiểm tra và hoàn phí ship nếu đủ điều kiện. | `O-1001` · `C-01` | `SỔ CÁI   : []` · `LỖI HÃNG : []` · `GỬI HÃNG : []` | **Không đạt.** DB ghi 4 ngày, model dùng 1 ngày, đề xuất 0đ rồi trả `denied` mà không chuyển người duyệt. Khoản hoàn 25.000đ theo REFUND-v3 bị bỏ sót. |
+
+Trace chạy trên `1d9c999`, mốc `after`, seed 55. Hai lệnh riêng đều sinh ID `ADHOC-1`; đối chiếu theo order và nội dung ticket. Với BT-02, không có lệnh `issue_refund` để cổng kiểm tra. Đề xuất P1 kiểm quyền lợi từ tracking DB trước khi trả lời từ chối và chuyển người duyệt nếu thiếu căn cứ. Cần chạy lại cả hai ca sau khi P1 thay đổi cổng.
 
 Giữ hai ticket này cho phần demo.
 
