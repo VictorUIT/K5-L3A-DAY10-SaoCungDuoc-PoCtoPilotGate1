@@ -29,6 +29,8 @@ lab10.helpers: db_delay_days, ticket_parcel, effective_policy, entitlement_vnd, 
 
 Mặc định dưới đây cho qua tất cả (= mốc base).
 """
+import re
+
 from . import helpers as H  # noqa: F401
 from .tools import Verdict
 
@@ -69,13 +71,24 @@ def _approval_ok(ctx, approval_id, amount):
     return True, ""
 
 
-# ---------- CỔNG 3 · pre_guard: ghim chính sách theo ngày hiệu lực ----------
+# ---------- CỔNG 3 · pre_guard: ghim chính sách theo ngày hiệu lực + tracking DB là nguồn sự thật về độ trễ ----------
+
+# "<số> ngày / days / hôm" trong chữ khách viết: là LỜI KHAI, không phải sự thật. Số ngày trễ chỉ lấy từ tracking DB.
+_CLAIMED_DAYS = re.compile(r"\b\d{1,3}\s*(?:ngày|ngay|days?|hôm)\b", re.I)
+
 
 def pre_guard(ctx):
     pol = _policy(ctx)
     if pol is None:
         ctx.log("no_effective_policy", as_of=ctx.as_of)
         return Verdict.escalate("không có chính sách nào hiệu lực vào ngày hôm nay: chuyển người")
+    text = ctx.ticket.get("text") or ""
+    claims = _CLAIMED_DAYS.findall(text)
+    if claims:
+        # Bỏ con số khách tự khai trước khi model đọc, để model không thể đè số ngày theo tracking (cả khai cao lẫn khai thấp).
+        ctx.log("claimed_days_removed", claims=claims)
+        return Verdict.rewrite("bỏ số ngày khách tự khai; độ trễ lấy từ tracking DB",
+                               _CLAIMED_DAYS.sub("vài ngày", text), policy_id=pol["policy_id"])
     return Verdict.allow(policy_id=pol["policy_id"])
 
 
