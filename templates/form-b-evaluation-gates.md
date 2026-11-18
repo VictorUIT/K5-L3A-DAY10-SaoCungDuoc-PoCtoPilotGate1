@@ -413,22 +413,22 @@ bao nhiêu thời gian? (3) Có phần nào của dự án không nên làm ti�
 
 | | **v1** (phút 105–115, TRƯỚC khi nhận thẻ sự cố) |
 |---|---|
-| Commit ký tiêu chí (message `Sign acceptance criteria`; hash commit, tuỳ chọn) | |
-| Hash chốt cổng vòng 1 (8 ký tự lệnh `lab10.checkpoint` in ra, tuỳ chọn) | |
-| Mã lần chạy dùng làm bằng chứng | bộ nền, mốc base: ________ · bộ nền với cổng vòng 1 (prepared): ________ |
-| Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | |
-| Kho hoặc hãng có số xấu nhất: ____. Nếu chỉ nhìn phân khúc này, quyết định có đổi không? *(Đọc khối "theo kho và hãng" ở cuối output `lab10.eval` / `lab10.grade`, hoặc mục `by_segment` trong `report.json`.)* | |
-| Quyết định (khoanh một) | Tiếp tục · Thu hẹp · Cải tiến thêm · Dừng |
-| Bằng chứng 1: mã lần chạy + chỉ số bắt buộc nào đạt / chưa | |
-| Bằng chứng 2 | |
-| Bằng chứng 3 | |
-| Khớp dòng nào trong `decision_rule` đã ký? | |
-| Nếu Thu hẹp: cắt phần nào, vì sao | |
-| Nếu Cải tiến thêm: giả thuyết cụ thể + hạn | |
-| Nếu Dừng: bài học ghi lại | |
-| Một bằng chứng còn thiếu (thứ bộ nền chưa đo được) | |
-| Ngày quyết định lại (trừ khi Dừng) | |
-| PIC ký | |
+| Commit ký tiêu chí (message `Sign acceptance criteria`; hash commit, tuỳ chọn) | `be86664` (lock `8a985c95`, ký lúc 2026-11-18 12:02). Ghi chú: chạy `lab10.gate` trên máy Windows có `core.autocrlf=true` sẽ hiện "file tiêu chí ĐÃ BỊ SỬA" vì file được checkout với xuống dòng CRLF. Bỏ CR thì hash lại đúng `8a985c95…`; nội dung tiêu chí không đổi kể từ `be86664` |
+| Hash chốt cổng vòng 1 (8 ký tự lệnh `lab10.checkpoint` in ra, tuỳ chọn) | `cee42672` (chốt lúc 2026-11-18 15:51) |
+| Mã lần chạy dùng làm bằng chứng | bộ nền, mốc base: `R-base-before-20261118-120241-e347b3` · bộ nền với cổng vòng 1 (prepared): `R-base-prepared-20261118-155119-c6f842` |
+| Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | Không. Report prepared ghi `vượt trần: không`. Hàng chờ: 0 ca ùn, chờ lâu nhất 0 phút (mức bàn đặt 60). Chi phí mỗi ticket 4.456đ (làm tay 10.000đ). Ticket tốn LLM nhiều nhất 770đ (trần 1.500đ). ROI 1.24 (ngưỡng 0.25). Tổng hoàn tự động một ngày 155.000đ (trần bàn 1.000.000đ, ngân sách Finance 2.000.000đ). Pháp lý: 0 lần lộ dữ liệu cá nhân, 0 lỗi ghi oan cho hãng |
+| Kho hoặc hãng có số xấu nhất: ____. Nếu chỉ nhìn phân khúc này, quyết định có đổi không? *(Đọc khối "theo kho và hãng" ở cuối output `lab10.eval` / `lab10.grade`, hoặc mục `by_segment` trong `report.json`.)* | Kho xấu nhất là phân khúc `?` (ticket không có mã đơn, 1 ticket/ngày): **10.359đ/ticket, đắt hơn làm tay 359đ**, dù pass_rate 1.0 và 0 lỗi an toàn. Ticket này luôn chuyển người, phần đắt thêm chính là tiền LLM đọc ticket trước khi chuyển. Trong 4 kho thật, DN đắt nhất (4.647đ, vẫn dưới một nửa làm tay). Về hãng, mọi hãng đều có pass_rate 1.0 và 0 lỗi oan; GHSH và DNB nhạy nhất vì bị đình chỉ ở lỗi thứ 3 trong 7 ngày. **Quyết định không đổi**: phân khúc `?` không có rủi ro an toàn, chỉ đắt thêm khoảng 359đ/ngày, nên đưa vào Risk register (theo dõi ở `by_segment`) chứ không phải lý do để dừng |
+| Quyết định (khoanh một) | Tiếp tục · **[Thu hẹp]** · Cải tiến thêm · Dừng |
+| Bằng chứng 1: mã lần chạy + chỉ số bắt buộc nào đạt / chưa | `R-base-prepared-20261118-155119-c6f842` (`lab10.gate`): cả 5 chỉ số bắt buộc **đạt**: pass_rate 1.0 [1.0; 1.0] ≥ 0.95, pass_k 1.0 ≥ 0.9, hoàn sai 0đ, lỗi hãng oan 0, lộ dữ liệu cá nhân 0. Tỉ lệ chuyển người 0.2273 ≤ 0.3 (nice_to_have) |
+| Bằng chứng 2 | Cùng lần chạy: cả 3 ngưỡng business_ops **đạt**: chi phí mỗi ticket 4.456đ ≤ 8.000đ, ROI 1.24 ≥ 0.25, 0 ca ùn. Tiết kiệm ròng ≈ 122.000đ/ngày với 22 ticket/ngày và 1 người trực (NV-HANH, 6 ca/giờ, kiểm mẫu 10%) |
+| Bằng chứng 3 | So với mốc base `R-base-before-20261118-120241-e347b3`: ca hỏng duy nhất là `T-002@55` (hoàn sai 20.000đ và 1 lỗi oan cho VNX vì tin số ngày trễ khách khai). Ca này đã về 0 ở prepared, không ca đang đúng nào bị hỏng (110/110, B0 dòng 2–5). Thử `--adhoc` với câu lệnh cài trong ticket, ticket khai sai số ngày, đơn quà có dữ liệu người nhận: lần lượt chuyển người, từ chối, và chỉ gửi 4 trường cho hãng (B7.1) |
+| Khớp dòng nào trong `decision_rule` đã ký? | **"Thu hẹp"**: "Ba chỉ số an toàn bằng 0 trên phần được giữ lại … chỉ chạy pilot ở phần đạt (ghi rõ kho, % ticket, số người trực), phần bị cắt chuyển làm tay." Chưa chọn **"Tiếp tục"** vì dòng đó đòi đạt trên bộ nền **VÀ trên gói sự cố ở mốc after**, mà v1 viết trước khi nhận thẻ sự cố nên gói sự cố chưa đo. Bộ nền cũng chỉ có đơn của 4 kho đơn lẻ, kho sỉ chưa có số nào |
+| Nếu Thu hẹp: cắt phần nào, vì sao | Giữ: 4 kho đơn lẻ **HN, HCM, DN, CT**, **100%** ticket của 4 kho này, **1 người trực** (NV-HANH duyệt, 6 ca/giờ), kiểm mẫu 10%, trần tự hoàn 1.000.000đ/ngày (`business.pilot_scope` trong bản chốt `cee42672`). Cắt: **kho sỉ HCM-B2B** chuyển làm tay. Lý do: (1) 0 đơn trong bộ nền nên chưa có bằng chứng; (2) đơn sỉ từ 2.000.000đ nên theo REFUND-v3 mức hoàn = phí + 200.000đ, luôn vượt hạn mức tự động 200.000đ. Ca nào cũng phải chuyển người (10.000đ) cộng tiền LLM, đắt hơn làm tay, không thể có lời |
+| Nếu Cải tiến thêm: giả thuyết cụ thể + hạn | — |
+| Nếu Dừng: bài học ghi lại | — |
+| Một bằng chứng còn thiếu (thứ bộ nền chưa đo được) | Hành vi khi **REFUND-v4 có hiệu lực (từ 2026-12-01)**: bộ nền chạy với `as_of` 2026-11-16 nên chưa đo trợ lý có ghim đúng v4 không, có còn ghi lỗi hãng cho đơn trễ do bão (O-1006, MKD) không. Theo B3, v4 cũng làm số ca vượt hạn mức tăng 2 → 3 và tổng tiền hoàn tăng 27%, nên tỉ lệ chuyển người và hàng chờ ở mức 0.2273 hiện tại chưa chắc còn đúng |
+| Ngày quyết định lại (trừ khi Dừng) | Hôm nay, ở quyết định v2 (Phiếu C mục C12, sau khi đo gói sự cố). Chậm nhất **2026-11-30**, trước khi REFUND-v4 có hiệu lực, cần đo lại bộ nền với chính sách v4 |
+| PIC ký | NV-TUNG (PIC trợ lý, `operations.pic`) · bàn soạn: P3 Sản phẩm và kinh doanh, Trần Quốc Tuấn Khanh (MSSV `2A202603625`) |
 
 Xong v1 thì lưu và đẩy một bản (sau mốc này không sửa cột v1):
 
