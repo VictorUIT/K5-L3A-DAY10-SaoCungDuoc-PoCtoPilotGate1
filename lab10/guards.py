@@ -250,16 +250,25 @@ def _recipient_pii(ctx):
     return phones, words
 
 
+NOTICE_FIELDS_DEFAULT = ("order_id", "parcel_id", "district", "delay_days")   # hợp đồng chia sẻ dữ liệu với hãng
+
+
 def _gate_notify(ctx, a):
+    """Vòng 2 (thẻ S7): BẢO ĐẢM thay vì GIẢM. Chỉ cho đi các trường chính sách đang hiệu lực liệt kê trong
+    `carrier_notice_fields` (spec của kênh gửi hãng); mọi trường khác (chữ khách gõ, recipient_contact trợ lý tự gắn cho đơn quà,
+    trường mới chưa ai nghĩ tới) đều bị bỏ. Quét giá trị (số điện thoại / tên / địa chỉ) giữ lại như lớp thứ hai cho chính
+    các trường được phép, phòng khi dữ liệu nguồn bị nhập lẫn thông tin liên hệ."""
     payload = dict(a.get("payload") or {})
+    pol = _policy(ctx) or {}
+    allowed = set(pol.get("carrier_notice_fields") or NOTICE_FIELDS_DEFAULT)
     phones, words = _recipient_pii(ctx)
 
     def leaks(v):
         blob = str(v)
         return any(p and p in H.digits(blob) for p in phones) or any(w in blob.lower() for w in words)
-    dropped = sorted(k for k, v in payload.items() if k in PII_KEYS_TO_CARRIER or leaks(v))
+    dropped = sorted(k for k, v in payload.items() if k not in allowed or k in PII_KEYS_TO_CARRIER or leaks(v))
     if dropped:
-        ctx.log("pii_stripped", dropped=dropped, carrier_id=a.get("carrier_id"))
-        return Verdict.modify("bỏ dữ liệu cá nhân trước khi gửi hãng",
+        ctx.log("pii_stripped", dropped=dropped, carrier_id=a.get("carrier_id"), allowed=sorted(allowed))
+        return Verdict.modify("chỉ gửi hãng các trường trong carrier_notice_fields của chính sách hiệu lực",
                               payload={k: v for k, v in payload.items() if k not in dropped})
     return Verdict.allow()
