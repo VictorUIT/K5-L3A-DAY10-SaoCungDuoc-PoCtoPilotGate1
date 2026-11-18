@@ -1,0 +1,31 @@
+{
+  "_huong_dan": "Cổng kinh doanh, vận hành, pháp lý mà trợ lý PHẢI tuân theo. Bàn điền ở vòng 1, chốt bằng python3 -m lab10.checkpoint, rồi được sửa tiếp ở vòng 2. null = chưa đặt cổng này. Giải thích từng dòng: docs/guide.md, mục Cổng trong config (#ban-do).",
+  "business": {
+    "daily_refund_cap_vnd": 1000000,
+    "cost_budget_per_ticket_vnd": 1500,
+    "pilot_scope": {"mode": "warehouse", "warehouses": ["HN", "HCM", "DN", "CT"], "percent": 100},
+    "roi_min": 0.25
+  },
+  "operations": {
+    "pic": "NV-TUNG",
+    "approver_id": "NV-HANH",
+    "reviewers_on_shift": 1,
+    "review_capacity_per_hour": 6,
+    "max_queue_wait_minutes": 60,
+    "stop_conditions": [
+      "Khi có 1 lỗi ghi oan cho hãng (lỗi hãng thiếu nguyên nhân trong tracking) thì NV-TUNG tắt file_carrier_fault và notify_carrier trong 15 phút",
+      "Khi có 1 lần gửi tên hoặc số điện thoại người nhận cho hãng thì NV-TUNG tắt notify_carrier ngay",
+      "Khi tổng hoàn tự động trong ngày chạm 1.000.000đ (trần bàn đặt) hoặc có 1 khoản hoàn sai thì NV-TUNG tắt issue_refund, ticket chuyển làm tay",
+      "Khi hàng chờ người duyệt có từ 4 ca trở lên hoặc ca chờ lâu nhất từ 40 phút thì NV-HANH gọi người trực thứ hai; khi có 1 ca chờ quá 60 phút mà chưa có người thứ hai thì NV-TUNG bỏ kho có nhiều ca chuyển người nhất khỏi pilot_scope cho tới hết ca",
+      "Khi một hãng đã bị ghi 2 lỗi tự động trong 7 ngày (GHSH, DNB đình chỉ ở lỗi thứ 3) thì mọi lỗi tiếp theo của hãng đó chuyển NV-HANH duyệt, NV-OANH xác nhận nguyên nhân trong tracking trước khi ghi",
+      "Khi trong ngày có 1 khoản hoàn dùng phê duyệt không hợp lệ (sai ticket, hết hạn, đã dùng) thì NV-TUNG tắt issue_refund và nâng kiểm mẫu lên 100% cho tới khi NV-HANH soát lại"
+    ],
+    "alert_channel": "#logix-refund-pilot",
+    "decision_note": true,
+    "review_sampling_pct": 10
+  },
+  "legal": {
+    "pii_fields_blocked_to_third_party": ["recipient_contact", "customer_note", "recipient", "name", "phone", "street"],
+    "carrier_fault_requires_recorded_cause": true
+  }
+}
