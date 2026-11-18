@@ -2,10 +2,10 @@
 
 ## Thông tin nhóm
 
-- Tên nhóm (`TenNhom`, không dấu, không khoảng trắng):
-- Lớp: `L3A` / `L3B`
-- Repo của bàn: `K5-<L3A|L3B>-DAY10-<TenNhom>-PoCtoPilotGate1`
-- Thẻ sự cố đã bốc (S1–S8):
+- Tên nhóm (`TenNhom`, không dấu, không khoảng trắng): `SaoCungDuoc`
+- Lớp: `L3A`
+- Repo của bàn: `K5-L3A-DAY10-SaoCungDuoc-PoCtoPilotGate1` (https://github.com/VictorUIT/K5-L3A-DAY10-SaoCungDuoc-PoCtoPilotGate1)
+- Thẻ sự cố đã bốc (S1–S8): `S7`
 
 ## Thành viên
 
@@ -13,8 +13,8 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; thêm dòng nếu 
 
 | STT | Họ và tên | MSSV | Vai | Trưởng nhóm |
 | --: | --------- | ---- | --- | :---------: |
-|   1 |           |      |     |             |
-|   2 |           |      |     |             |
+|   1 | Nguyễn Văn Ngọc Sơn | 2A202603600 | Kỹ sư cổng (P1) | ✔ |
+|   2 | Nguyễn Bình An | 2A202603606 | Kỹ sư cổng (P2) |             |
 |   3 | Trần Quốc Tuấn Khanh | 2A202603625 | Sản phẩm và kinh doanh (P3) |             |
 |   4 | Đỗ Phương Nam | 2A202603621 | Vận hành và pháp lý (P4) |             |
 
@@ -41,6 +41,40 @@ Mã commit, mã lần chạy (`runs/<mã>`), dòng trong phiếu.
 ### Exit ticket
 
 Một điều học được, một điều còn chưa chắc.
+
+## NguyenVanNgocSon-2A202603600
+
+### Phần việc phụ trách
+
+Nguyễn Văn Ngọc Sơn, MSSV `2A202603600`, P1 (Kỹ sư cổng 1, trưởng nhóm, giữ máy chạy lệnh và danh tính git của bàn). Phụ trách: ký Bản tiêu chí (`config/acceptance_criteria.json`, Phiếu A mục A5); Phiếu B mục B0, B1 (câu 2.1), B2 (câu 2.2), B7.1 (câu 2.6); `lab10/guards.py` (cổng vòng 1 và vòng 2); chốt cổng vòng 1 (`lab10.checkpoint`) và chạy mốc prepared. Vòng 2 (thẻ S7): nhận thẻ và chạy grade trước khi sửa (câu 3.0, Phiếu C mục C0, C1), sửa `lab10/guards.py` (câu 3.5), chạy lại S7 và bộ nền; chạy lệnh 6 và lệnh 7 lần cuối.
+
+### Đóng góp cụ thể
+
+- Ký tiêu chí trước mọi lần đánh giá: ký lúc 12:02:19, commit `Sign acceptance criteria` lúc 12:02:36, lần `eval` đầu tiên lúc 12:02:41.
+- Câu 2.1–2.2: chạy mốc base (trượt 2 ngưỡng an toàn: hoàn sai 20.000đ, 1 lỗi oan, đều từ `T-002@55`); soát lỗi `T-002@55` thành 2 lỗi chìm (model tin số ngày khách khai thay tracking; chữ khách gõ bị chép sang hãng).
+- Câu 2.6, `lab10/guards.py` gồm 3 cổng: (1) tiền chỉ đi khi khớp tracking DB và chính sách hiệu lực (sửa số tiền và người trả về đúng thay vì chuyển người; chặn hoàn lặp, phê duyệt sai ticket hoặc hết hạn, vượt hạn mức tự động, vượt 300.000đ/khách/ngày, quá 2 lỗi/hãng/ngày); (2) chỉ ghi lỗi hãng đúng kiện, đúng hãng, có nguyên nhân trong tracking, và bỏ dữ liệu cá nhân khỏi thông báo gửi hãng; (3) `pre_guard` ghim chính sách theo ngày hiệu lực và bỏ số ngày khách tự khai trước khi model đọc.
+- Vá lỗ hổng do ticket hiểm BT-02 của P2 tìm ra (khách khai trễ ít hơn tracking, trợ lý từ chối sai 25.000đ): thêm cổng dự phòng ở `send_reply`, rồi sửa gốc ở `pre_guard`.
+- Dựng 13 tình huống sự cố giả lập (LLM 429, câu lệnh cài trong ticket và ghi chú đặt hàng, chỉ mục chính sách lệch, REFUND-v4, đơn nhiều kiện, phê duyệt sai, quà tặng…) để thử cổng trước khi chốt: không cổng 12/13 tình huống có thiệt hại, có cổng 13/13 sạch.
+- Chốt cổng vòng 1 (`cee42672`); mốc prepared đạt cả 9 ngưỡng đã ký.
+- Thẻ S7: kiểm 4 file thẻ khớp hash MANIFEST; grade trước khi sửa cho thấy cổng vòng 1 đã đỡ trọn phần nhìn thấy (pass 0.25 → 1.0, lộ dữ liệu 30 → 0). Câu 3.5: đổi `notify_carrier` từ danh sách cấm (GIẢM) sang danh sách cho phép `carrier_notice_fields` của chính sách hiệu lực (BẢO ĐẢM).
+
+### Bằng chứng
+
+- Commit P1: `be86664` (ký tiêu chí), `ea9c219` (cổng vòng 1, A5, B0, B1, B2, B7.1), `2c3660e` (bản nháp `operating_gates.json` để P3/P4 sửa), `6acf184` (cổng dự phòng `send_reply`), `826e58e` (`pre_guard` bỏ số ngày tự khai), `637eefd` (bản cuối cổng vòng 1, chốt `cee42672`, B0), `fc228bd` (S7: C0, C1, danh sách cho phép).
+- Vòng 1: base `R-base-before-20261118-120241-e347b3` → after `R-base-after-20261118-154910-39f687` → prepared `R-base-prepared-20261118-155119-c6f842` (110/110, 9/9 ngưỡng đã ký đạt).
+- Vòng 2 (S7): grade trước khi sửa `R-S7-grade-20261118-164613-c6f842` (base `R-S7-before-20261118-164613-c6f842`, prepared `R-S7-prepared-20261118-164613-c6f842`); sau khi sửa `R-S7-after-20261118-164712-b3ebf5`, bộ nền `R-base-after-20261118-164713-b3ebf5`, grade `R-S7-grade-20261118-164814-b3ebf5`.
+- Phiếu: A5; B0, B1, B2, B7.1; C0, C1, dòng `Thẻ đã bốc: S7`.
+
+### Sử dụng AI
+
+Claude Code (Claude) được dùng xuyên suốt phần P1: đọc code trợ lý (`agent.py`, `mock_llm.py`, `tools.py`, `eval.py`) để tìm chỗ yếu; viết và kiểm thử `lab10/guards.py`; chạy `lab10.eval`, `lab10.trace`, `lab10.gate`, `lab10.checkpoint`, `lab10.grade`; dựng 13 tình huống giả lập; soạn nội dung A5, B0, B1, B2, B7.1, C0, C1. Claude cũng soạn **bản nháp ban đầu** của Phiếu A (A1–A4, ngưỡng tiêu chí trước khi ký) và của `config/operating_gates.json`; P2, P3, P4 đã rà lại và sửa phần của mình. Mọi ngưỡng, con số và quyết định do cả bàn chốt và phải giải thích được lúc demo.
+
+### Exit ticket
+
+*(P1 tự viết, mỗi ý một câu.)*
+
+- Điều học được: …
+- Điều còn chưa chắc: …
 
 ## NguyenBinhAn-2A202603606
 
