@@ -144,13 +144,17 @@ Trần Quốc Tuấn Khanh, MSSV `2A202603625`, P3 (Sản phẩm và kinh doanh)
 - Mục `business`: giữ trần tự hoàn 1.000.000đ/ngày (một nửa ngân sách Finance), ngân sách 1.500đ/ticket (bằng trần LLM trong `ops_limits`), `roi_min` 0.25 (khớp tiêu chí đã ký). Đổi `pilot_scope` từ `all` sang 4 kho đơn lẻ HN, HCM, DN, CT, bỏ kho sỉ HCM-B2B: kho này có 0 đơn trong bộ nền, đơn sỉ từ 2 triệu nên mức hoàn luôn vượt hạn mức tự động, ca nào cũng chuyển người và đắt hơn làm tay.
 - B6 lăng kính kinh doanh: 3 lý do thất bại (vượt ngân sách hoàn trong ngày sale, chi phí mỗi ticket vượt làm tay, ticket dài làm tiền LLM tăng vọt), mỗi lý do gắn với một số trong report và một cổng trong config.
 - B8: quyết định v1 là **Thu hẹp** (4 kho đơn lẻ, 100% ticket, 1 người trực), khớp dòng "Thu hẹp" của `decision_rule`. Chưa chọn "Tiếp tục" vì gói sự cố chưa đo. Phát hiện cảnh báo "file tiêu chí ĐÃ BỊ SỬA" của `lab10.gate` trên máy Windows là do checkout CRLF (`core.autocrlf=true`), hash bản LF vẫn khớp lock `8a985c95`.
+- C5 câu 3.2 (thẻ S7): viết spec của kênh gửi hãng. Thông báo `notify_carrier` chỉ được chứa đúng các khoá trong `carrier_notice_fields` của chính sách hiệu lực (`order_id`, `parcel_id`, `district`, `delay_days`), không giá trị nào chứa SĐT, tên hay đường của người nhận, bất kể `is_gift`; kèm vế không chặn quá tay (ca hợp lệ vẫn báo hãng đủ 4 trường). Chỉ ra `pii_leaks` chỉ dò giá trị, không kiểm tập khoá, nên vế khoá phải kiểm bằng dòng `GỬI HÃNG` trong trace.
+- C7 phần kinh doanh: giữ `pilot_scope` 4 kho và `notify_carrier: on`, vì lộ dữ liệu ở base trải 3/4 kho (HN 10, HCM 15, DN 5 lượt) và 3/4 hãng nên cắt kho không chặn được nhánh [3]. Kiểm cái giá của bản sửa danh sách cho phép: prepared → after 5.005đ → 5.005đ/ticket, ROI 1.0 → 1.0, tức tốn 0đ; phần tăng base → prepared đến từ kiểm mẫu 10% và ghi chú giải thích của vòng 1.
+- C12: quyết định v2 **giữ Thu hẹp**. Số đã đủ cho "Tiếp tục" (8 ngưỡng đạt trên bộ nền và gói S7, lộ dữ liệu 30 → 0 → 0), nhưng chỉ trong 4 kho đã đo: HCM-B2B vẫn 0 đơn, và 30 lượt dữ liệu gửi trước khi sửa còn ở GHSH, VNX, DNB. Thêm điều kiện không mở rộng khi chưa có xác nhận xoá của 3 hãng; quyết định lại 2026-11-30 (trước REFUND-v4). Viết ba dòng bắt buộc và chép sang `submission/submission.json` (`decision_v2`, `three_lines`), cập nhật theo hai monitor hợp đồng kênh gửi hãng của P2.
 
 ### Bằng chứng
 
 - `R-base-after-20261118-145831-4675a2`: sau khi đổi `pilot_scope` sang 4 kho, 110/110, hoàn sai 0 · lỗi oan 0 · lộ dữ liệu 0, 4.456đ/ticket, ROI 1.24, tổng hoàn tự động 155.000đ/ngày, `vượt trần: không`; 13 unit test qua.
 - B8 dùng `R-base-before-20261118-120241-e347b3` (mốc base) và `R-base-prepared-20261118-155119-c6f842` (prepared, chốt `cee42672`): 9/9 ngưỡng đã ký đạt.
 - Commit P3: `8d85e30` (B3, B6 kinh doanh, B7.4, `pilot_scope`), `a53e646` (B8 quyết định v1).
-- Thẻ sự cố, mã lần chạy vòng 2 cho C5/C7/C12: `PENDING Sx`.
+- Thẻ sự cố **S7**. C7 và C12 dùng gói S7: base `R-S7-before-20261118-164613-c6f842`, prepared `R-S7-prepared-20261118-164613-c6f842`, after `R-S7-after-20261118-164814-b3ebf5`, bộ nền after `R-base-after-20261118-164713-b3ebf5` (C0), self-check `R-S7-grade-20261118-173953-414377` (C9). Số kinh doanh ba mốc của C7 đối chiếu lại bằng `R-S7-grade-20261118-173925-dcc726`.
+- Commit P3 vòng 2: `5452130` (C5 câu 3.2), `fc9bcec` (C7 phần kinh doanh), `5c17779` (C12 và `submission.json`), `605292b` (C12 cập nhật theo monitor của P2).
 
 ### Sử dụng AI
 
@@ -159,4 +163,4 @@ Claude Code hỗ trợ đọc `data/world.json` và `lab10/ops.py`, chạy `lab1
 ### Exit ticket
 
 - Điều học được: Quyết định Gate 1 phải đọc đúng câu chữ của `decision_rule` đã ký, không chỉ nhìn 9 ngưỡng xanh. Bộ nền đạt hết nhưng chưa có gói sự cố và chưa có đơn kho sỉ, nên "Thu hẹp" mới là quyết định con số đỡ được.
-- Điều còn chưa chắc: Trần tự hoàn 1.000.000đ/ngày được ước theo 155.000đ/ngày của bộ nền đều đặn; chưa biết khi REFUND-v4 có hiệu lực cùng lúc với ngày sale (ticket ×3) thì tổng hoàn và tỉ lệ chuyển người còn trong ngưỡng hay không.
+- Điều còn chưa chắc: Trần tự hoàn 1.000.000đ/ngày được ước theo 155.000đ/ngày của bộ nền đều đặn; chưa biết khi REFUND-v4 có hiệu lực cùng lúc với ngày sale (ticket ×3) thì tổng hoàn và tỉ lệ chuyển người còn trong ngưỡng hay không. Với S7, gói thử chỉ 8 ticket/ngày nên phí giữ chỗ người trực chiếm khoảng 3.750đ/ticket; chưa biết ROI 1.0 còn giữ được với lượng ticket thật.
