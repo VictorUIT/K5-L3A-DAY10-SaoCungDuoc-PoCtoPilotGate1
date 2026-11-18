@@ -84,12 +84,16 @@ ChatGPT hỗ trợ soạn tài liệu, thiết kế metric và ca kiểm thử, 
 - HAZOP vòng 1 trên `file_carrier_fault` (6 dòng) và 4 dòng ngoài kỹ thuật. Tìm ra nhánh chưa thấy trên trace: cổng chỉ đếm lỗi hãng trong ngày, nên GHSH (5 đơn đủ điều kiện lỗi hãng) vẫn có thể bị đình chỉ ở lỗi thứ 3 trong 7 ngày.
 - Mục `legal`: chặn thêm `recipient`, `name`, `phone`, `street` khi gửi hãng. Mục `operations`: điều kiện dừng số 4 khớp phạm vi theo kho, thêm điều kiện dừng số 5 (lỗi hãng 7 ngày) và số 6 (phê duyệt không hợp lệ).
 - Runbook 1–3 và giờ cao điểm khớp con số trong config; đo chi phí khi thêm người trực thứ hai.
+- Vòng 2 (thẻ S7): C5 câu 3.3, giả định môi trường "cờ `is_gift` phản ánh đúng đơn quà" (sai ngay trong data: `O-2701`…`O-2704`, `O-2706`), và chỉ ra monitor `carrier_recipient_contact_rate` mù với 4/6 ticket bị lộ ở base.
+- C3.3 hiệu chỉnh lòng tin (người đặt hàng, người nhận hàng); C4 HAZOP của thẻ trên `notify_carrier` (5 dòng, nhánh chưa thấy trên trace: chính danh sách cho phép `carrier_notice_fields` có thể bị chính sách sau thêm trường liên hệ); C9 fault tree sau khi sửa; C10 risk register 3 dòng; C11 checklist và runbook phần 4–5.
+- Điền `submission/submission.json` (team, members, incident, decision_v1); sửa lỗi CRLF trên Windows làm grade báo nhầm file khoá bị đổi.
 
 ### Bằng chứng
 
 - `R-base-after-20261118-153103-610c87`: sau khi sửa `operations`/`legal`, 110/110, hoàn sai 0 · lỗi oan 0 · lộ dữ liệu 0, chờ lâu nhất 0 phút, 4.456đ/ticket, ROI 1.24.
 - `R-base-after-20261118-153114-bb48a9`: thử 2 người trực (12 ca/giờ) → 5.820đ/ticket, ROI 0.72 (config đã trả về 1 người).
 - `--adhoc` đơn quà `O-1026`/`C-10` ở mốc `after`: `GỬI HÃNG` chỉ còn `order_id`, `parcel_id`, `district`, `delay_days`.
+- Vòng 2: `R-S7-grade-20261118-173953-414377` (after S7 `R-S7-after-20261118-173952-414377`, bộ nền `R-base-after-20261118-173952-414377`): `pii_leaks` 30 → 0, `5 regression ✅`, `6 monitor ✅`; base `R-S7-before-20261118-173955-414377` dùng cho C3.3, C4, câu 3.3.
 - Commit P4: `c0c389a` (Phiếu B B4, B5, B6, B7.5, B7.6; `config/operating_gates.json` mục `operations`, `legal`).
 
 ### Exit ticket
