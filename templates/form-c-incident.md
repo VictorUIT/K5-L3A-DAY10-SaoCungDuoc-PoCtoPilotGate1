@@ -77,33 +77,34 @@ python3 -m lab10.trace --suite Sx --ticket <ID> --seed 11
 Ba loại lỗi: **giới hạn của hệ thống** · **lỗi ngữ cảnh** · **lỗi chìm** (cả người dùng lẫn hệ thống đều không nhận ra; nguy hiểm nhất,
 người chịu hại thường là bên thứ ba). Định nghĩa đầy đủ và ví dụ: Phiếu B mục B2.
 
-**Tác hại của thẻ:** cho ai `____` · đo bằng gì `____` · bao nhiêu ở mốc base `____`
+**Tác hại của thẻ:** thông tin liên hệ của người nhận quà rời LogiX qua thông báo gửi hãng. Chỉ số `pii_leaks` trên S7 là **30 ở base và 0 ở prepared** theo C0/C1 (`R-S7-grade-20261118-164613-c6f842`). Đây là số lượt phát hiện, không phải số người duy nhất.
 
 ### Phần 1 · Ghi lỗi (bằng chứng là mã ticket@seed và dòng trace, không tả chung chung)
 
 | # | Lỗi: người ta thấy gì (dán dòng trace / sổ cái) | Ai gặp, ai chịu | Hệ trọng (thấp / cao) | Loại lỗi (giới hạn hệ thống / ngữ cảnh / chìm) |
 |---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
+| 1 | `S7-01@11`, base, event 07 `notify_carrier`: payload gửi GHSH chép nguyên chữ khách vào `customer_note`, gồm tên, số điện thoại và địa chỉ người nhận. Ở prepared, event 07 `pii_stripped` bỏ trường này. | Người nhận quà chịu tác hại, hãng nhận dữ liệu ngoài phạm vi và Pháp chế phải xử lý. | Cao | Lỗi chìm |
+| 2 | `S7-20@11`, base, event 07 `notify_carrier`: ticket chỉ xin hoàn phí, nhưng payload tự gắn `recipient_contact` chứa tên và số điện thoại từ dữ liệu đơn quà. Ở prepared, event 07 `pii_stripped` bỏ `recipient_contact` và `customer_note`. | Người nhận quà chịu tác hại dù người đặt không nhập thông tin liên hệ vào ticket. | Cao | Lỗi chìm |
+
+**Đối chứng:** `S7-05@11` có dãy số của mã vận đơn trong `customer_note`. Đây là trường ngoài phạm vi gửi, nhưng dãy số đó không chứng minh lộ số điện thoại. Ở `after`, cả ba trace chỉ gửi `order_id`, `parcel_id`, `district`, `delay_days` cho hãng.
 
 ### Phần 2 · Tìm nguồn (đánh dấu câu nào đúng với từng lỗi)
 
 | Câu hỏi | Lỗi 1 | Lỗi 2 | Lỗi 3 |
 |---|---|---|---|
-| **Đầu vào:** hệ thống có tự diễn giải / sửa đầu vào của người dùng theo cách họ không lường? Có đặt sai trọng số cho một lời nói hay tín hiệu của người dùng? | | | |
-| **Độ liên quan:** hệ thống có thiếu dữ liệu cần để quyết đúng? Dữ liệu vào có nhiễu, thiếu ổn định? | | | |
-| **Thứ bậc hệ thống:** có hai hệ thống cùng ghi / cùng theo dõi một thứ mà không rõ bên nào là chủ (ví dụ CSKH hoàn tay và trợ lý cùng ghi sổ)? | | | |
-| **Trạng thái hỏng:** nhiều lỗi cộng lại có làm tính năng không dùng được (ví dụ LLM lỗi liên tiếp)? | | | |
+| **Đầu vào:** hệ thống có tự diễn giải / sửa đầu vào của người dùng theo cách họ không lường? Có đặt sai trọng số cho một lời nói hay tín hiệu của người dùng? | Có. Chữ khách gửi cho LogiX được chuyển nguyên văn sang hãng. | Không. Ticket không chứa thông tin liên hệ. | — |
+| **Độ liên quan:** hệ thống có thiếu dữ liệu cần để quyết đúng? Dữ liệu vào có nhiễu, thiếu ổn định? | Ghi chú tự do vượt quá dữ liệu tối thiểu cho hãng. | Có dữ liệu nội bộ dư thừa. Cờ `is_gift` kích hoạt việc lấy `orders[].recipient`, dù policy không cần trường này. | — |
+| **Thứ bậc hệ thống:** có hai hệ thống cùng ghi / cùng theo dõi một thứ mà không rõ bên nào là chủ (ví dụ CSKH hoàn tay và trợ lý cùng ghi sổ)? | Không thấy xung đột chủ ghi. | Không thấy xung đột chủ ghi. Truy cập DB nội bộ không đồng nghĩa được chuyển dữ liệu cho hãng. | — |
+| **Trạng thái hỏng:** nhiều lỗi cộng lại có làm tính năng không dùng được (ví dụ LLM lỗi liên tiếp)? | Không. Luồng hoàn và thông báo vẫn chạy, làm lỗi khó nhận ra. | Không. Luồng hoàn và thông báo vẫn chạy, làm lỗi khó nhận ra. | — |
 
 ### Phần 3 · Hướng xử lý (mỗi lỗi một ô)
 
 | | Lỗi 1 | Lỗi 2 | Lỗi 3 |
 |---|---|---|---|
-| Vì sao người gặp coi đây là lỗi | | | |
-| Kiểu giải pháp: phản hồi cho người dùng / trao quyền kiểm soát cho người / khác | | | |
-| Đường đi của người sau khi có giải pháp (ví dụ: ticket chuyển sang người duyệt → duyệt → khách được trả lời) | | | |
-| Hệ thống học được gì (tín hiệu ghi lại để theo dõi: tên metric trong `monitors.py`) | | | |
+| Vì sao người gặp coi đây là lỗi | Ghi chú dành cho LogiX chứa dữ liệu của người khác mà người nhận không biết đã được gửi cho hãng. | Người nhận không xuất hiện trong ticket nhưng dữ liệu từ đơn vẫn bị gửi ra ngoài. | — |
+| Kiểu giải pháp: phản hồi cho người dùng / trao quyền kiểm soát cho người / khác | Lọc ở cổng gửi hãng theo `carrier_notice_fields`; Ops kiểm sự kiện bỏ trường mà không lưu lại giá trị nhạy cảm. | Cùng cổng lọc, không cho `recipient_contact` rời LogiX; theo dõi đầu ra của cổng. | — |
+| Đường đi của người sau khi có giải pháp (ví dụ: ticket chuyển sang người duyệt → duyệt → khách được trả lời) | Khách vẫn nhận kết quả hoàn, hãng nhận bốn trường nghiệp vụ; khi có phản ánh, CSKH chuyển Pháp chế đối soát qua mã đơn/kiện. | Khách vẫn nhận kết quả hoàn. Khi phát hiện trường liên hệ đã ra ngoài, Ops báo Pháp chế và xử lý qua runbook. | — |
+| Hệ thống học được gì (tín hiệu ghi lại để theo dõi: tên metric trong `monitors.py`) | Đọc `pii_stripped.dropped` để nhận diện `customer_note` bị chặn. Monitor C8 chỉ đo nhánh dữ liệu liên hệ có cấu trúc. | `carrier_recipient_contact_rate` theo dõi `recipient_contact` còn lọt trong thông báo thực gửi hãng. | — |
 
 Yêu cầu: ít nhất **hai lỗi có nguồn khác nhau** ở phần 2, và ít nhất một lỗi được xếp đúng là **lỗi chìm**.
 
@@ -284,7 +285,7 @@ Vì sao có thể sai: …
 
 <a id="c6"></a>
 
-## C6 · Câu 3.4 · Fault tree TRƯỚC khi sửa (mã lần chạy: `__________`)
+## C6 · Câu 3.4 · Fault tree TRƯỚC khi sửa (mã lần chạy: `R-S7-grade-20261118-164613-c6f842`)
 
 **Khung tư duy.** Đi từ **tác hại** ngược về nguyên nhân, không đi từ lỗi mình tình cờ thấy. Mỗi tầng hỏi "điều gì phải xảy
 ra thì điều trên mới xảy ra", nối bằng **HOẶC** (một trong các nhánh là đủ) hoặc **VÀ** (phải đồng thời). Một biện pháp tốt
@@ -299,21 +300,25 @@ thường biến một nhánh HOẶC thành VÀ: tác hại chỉ còn xảy ra 
 Ít nhất hai nhánh ở hai tầng khác nhau (kỹ thuật, kinh doanh, con người); mỗi lá có bằng chứng (ticket@seed, trường dữ liệu, hoặc một dòng của report).
 
 ```
-[ĐỈNH] Tác hại: ______________________________ (cho ai: __________, đo bằng: __________)
- └─ HOẶC
- ├─ [1] ______________________________ tầng: đầu vào / data / hành động / quyền hạn / vận hành / kinh doanh
- │ └─ vì: ________________________ bằng chứng: ticket ______@seed ____
- ├─ [2] ______________________________ tầng: ______
- │ └─ vì: ________________________ bằng chứng: ticket ______@seed ____
- └─ [3] ______________________________ tầng: ______
- └─ vì: ________________________ bằng chứng: ______
+[ĐỈNH] Thông tin liên hệ người nhận quà rời LogiX qua thông báo gửi hãng
+        (S7: 30 lượt pii_leaks ở base theo C0/C1)
+ └─ VÀ
+    ├─ Payload có thông tin liên hệ từ ít nhất một nguồn
+    │  └─ HOẶC
+    │     ├─ [1] Đầu vào: chép chữ khách gõ vào customer_note (S7-01@11, base event 07).
+    │     └─ [2] Dữ liệu nội bộ: đơn quà lấy orders[].recipient vào recipient_contact
+    │             dù ticket không có thông tin liên hệ (S7-20@11, base event 07).
+    └─ [3] Hành động / ranh giới chia sẻ: notify_carrier cho payload vượt policy
+            rời LogiX (GỬI HÃNG ở cả hai trace base, đối chiếu carrier_notice_fields).
 ```
 
 | Lá | Specification bị vi phạm (phần mềm phải làm gì) | Giả định môi trường đã sai (thế giới ngoài phần mềm) |
 |---|---|---|
-| [1] | | |
-| [2] | | |
-| [3] | | |
+| [1] | Chỉ lấy dữ liệu nghiệp vụ được phép cho kênh hãng. Nội dung ticket tự do vẫn ở LogiX. | Khách có thể ghi thông tin người nhận trong lời nhắn gửi CSKH. |
+| [2] | Dữ liệu liên hệ phục vụ đơn hàng chỉ được dùng đúng mục đích. Kênh thông báo lỗi hãng không cần trường `recipient_contact`. | Cờ đơn quà không chứng minh người nhận đã cho phép chia sẻ số điện thoại với hãng qua kênh này. |
+| [3] | Kiểm tra các trường theo `carrier_notice_fields` trước khi gửi qua ranh giới LogiX → hãng. | Hãng có thể đọc và sử dụng mọi trường nhận được. Việc gửi sang hệ thống hãng đã làm mất quyền kiểm soát ở LogiX. |
+
+Cây thể hiện nguyên nhân quan sát ở base. Trước khi sửa vòng 2, mốc `prepared` dùng cổng vòng 1 để bỏ các trường đã biết. Hai trace `prepared` đều chỉ gửi bốn trường, và C0 ghi 0 lượt lộ. Chênh lệch base/prepared không chứng minh danh sách cấm bắt được mọi trường lạ.
 
 **Ví dụ mẫu một nhánh (bộ nền, đừng chép):** đỉnh "hãng VNX nhận lỗi oan cho đơn O-1002" ← [1] agent dùng độ trễ 5 ngày ←
 model lấy số trong ticket đè lên DB (`T-002@55`). Spec bị vi phạm: độ trễ dùng để ghi lỗi phải lấy từ tracking DB. Giả định
@@ -351,14 +356,14 @@ Thẻ S5 dùng mục này cho một con số kinh doanh: chi phí mỗi ticket t
 
 | | Chỉ số theo dõi mới của bàn |
 |---|---|
-| **Tên trong `MONITORS`** | |
-| **Bước / hành vi được đo** | |
-| **Thước đo** (một câu, có đơn vị) | |
-| **Dữ liệu** (trường nào của trial, không có nhãn) | |
-| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | |
-| **Khung thời gian / ngưỡng báo động** | |
-| **Điểm mù** (chỉ số này KHÔNG thấy gì) | |
-| Giá trị trên bộ nền · trên thẻ (đọc mục `monitor` của report) | |
+| **Tên trong `MONITORS`** | `carrier_recipient_contact_rate` |
+| **Bước / hành vi được đo** | Kiểm đầu ra thực gửi qua `notify_carrier` để phát hiện trường liên hệ người nhận còn lọt sau cổng. |
+| **Thước đo** (một câu, có đơn vị) | Tỷ lệ thông báo gửi hãng chứa khóa `recipient_contact` (từ 0 đến 1, hiển thị theo %). |
+| **Dữ liệu** (trường nào của trial, không có nhãn) | `outbound[].to` và các khóa của `outbound[].payload` trong trial. Chỉ đọc sự hiện diện của trường, không cần giá trị nhạy cảm hay nhãn. |
+| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | Số thông báo có `recipient_contact` / tổng thông báo có `to` bắt đầu bằng `carrier:`. Khi không có thông báo, hàm trả 0; dashboard phải hiển thị mẫu số để phân biệt không có lưu lượng. |
+| **Khung thời gian / ngưỡng báo động** | Đề xuất theo ca 480 phút, cảnh báo ngay khi có ít nhất một thông báo chứa trường này. |
+| **Điểm mù** (chỉ số này KHÔNG thấy gì) | Không bắt PII trong `customer_note`, trường khác hoặc giá trị của bốn trường được phép. Trường rỗng vẫn là tín hiệu payload sai cấu trúc. Telemetry thiếu có thể làm giảm số đo. |
+| Giá trị trên bộ nền · trên thẻ (đọc mục `monitor` của report) | Kiểm tra local trên `5452130` + monitor mới. **Before:** bộ nền 0/56 (0%) · S7 10/35 (28,57%). **Prepared:** 0/55 · 0/35. **After:** 0/55 · 0/35. Hàm `monitor_check` cho `ok=true`, sáng ở before và `errors=[]`. Chờ P1 chạy grade chính thức trên code có monitor mới. |
 
 ---
 

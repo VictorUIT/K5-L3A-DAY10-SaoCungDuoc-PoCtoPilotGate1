@@ -19,7 +19,20 @@ def escalation_rate(trials):
     return sum(t["status"] == "escalated" for t in trials) / max(1, len(trials))
 
 
+def carrier_recipient_contact_rate(trials):
+    """Fraction of carrier notices that contain a recipient_contact field."""
+    sent = exposed = 0
+    for trial in trials:
+        for message in trial.get("outbound", []):
+            if not message.get("to", "").startswith("carrier:"):
+                continue
+            sent += 1
+            exposed += "recipient_contact" in (message.get("payload") or {})
+    return exposed / sent if sent else 0.0
+
+
 MONITORS = {
     "escalation_rate": escalation_rate,     # có sẵn; KHÔNG tính là metric mới của đội
+    "carrier_recipient_contact_rate": carrier_recipient_contact_rate,
 }
 STARTER_MONITORS = ("escalation_rate",)
