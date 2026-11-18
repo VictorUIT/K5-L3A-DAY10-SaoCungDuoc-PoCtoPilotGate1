@@ -67,14 +67,12 @@ Nguyễn Văn Ngọc Sơn, MSSV `2A202603600`, P1 (Kỹ sư cổng 1, trưởng 
 
 ### Sử dụng AI
 
-Claude Code (Claude) được dùng xuyên suốt phần P1: đọc code trợ lý (`agent.py`, `mock_llm.py`, `tools.py`, `eval.py`) để tìm chỗ yếu; viết và kiểm thử `lab10/guards.py`; chạy `lab10.eval`, `lab10.trace`, `lab10.gate`, `lab10.checkpoint`, `lab10.grade`; dựng 13 tình huống giả lập; soạn nội dung A5, B0, B1, B2, B7.1, C0, C1. Claude cũng soạn **bản nháp ban đầu** của Phiếu A (A1–A4, ngưỡng tiêu chí trước khi ký) và của `config/operating_gates.json`; P2, P3, P4 đã rà lại và sửa phần của mình. Mọi ngưỡng, con số và quyết định do cả bàn chốt và phải giải thích được lúc demo.
+Claude Code (Claude) được dùng xuyên suốt phần P1: đọc code trợ lý (`agent.py`, `mock_llm.py`, `tools.py`, `eval.py`) để tìm chỗ yếu; viết và kiểm thử `lab10/guards.py`; chạy `lab10.eval`, `lab10.trace`, `lab10.gate`, `lab10.checkpoint`, `lab10.grade`; dựng 13 tình huống giả lập; soạn nội dung A5, B0, B1, B2, B7.1, C0, C1. Claude cũng soạn **bản nháp ban đầu** của Phiếu A (A1–A4, ngưỡng tiêu chí trước khi ký) và của `config/operating_gates.json`; P2, P3, P4 đã rà lại và sửa phần của mình. Exit ticket do Claude soạn nháp, P1 đã đọc và chốt. Mọi ngưỡng, con số và quyết định do cả bàn chốt và phải giải thích được lúc demo.
 
 ### Exit ticket
 
-*(P1 tự viết, mỗi ý một câu.)*
-
-- Điều học được: …
-- Điều còn chưa chắc: …
+- Điều học được: Chặn dữ liệu cá nhân bằng danh sách cấm chỉ GIẢM rủi ro, vì nó bỏ sót trường mới như `recipient_contact` ở S7; chỉ danh sách cho phép mới BẢO ĐẢM.
+- Điều còn chưa chắc: `pre_guard` chỉ bỏ số ngày viết bằng số ("9 ngày"), nên chưa chắc cổng còn đứng vững khi khách viết bằng chữ ("hơn một tuần") hoặc khi thay MockLLM bằng model thật.
 
 ## NguyenBinhAn-2A202603606
 
