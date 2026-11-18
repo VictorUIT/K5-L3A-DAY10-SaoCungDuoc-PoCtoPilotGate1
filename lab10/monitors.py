@@ -15,6 +15,11 @@ tức là monitor "sáng đèn" khi sự cố xảy ra.
 """
 
 
+# Contract for the carrier notice channel, independent of the active guard.
+# If a policy starts permitting extra fields, the monitor should still flag them.
+CARRIER_NOTICE_CONTRACT_FIELDS = frozenset({"order_id", "parcel_id", "district", "delay_days"})
+
+
 def escalation_rate(trials):
     return sum(t["status"] == "escalated" for t in trials) / max(1, len(trials))
 
@@ -31,8 +36,34 @@ def carrier_recipient_contact_rate(trials):
     return exposed / sent if sent else 0.0
 
 
+def carrier_notice_outside_contract_rate(trials):
+    """Fraction of sent carrier notices with keys outside the channel contract."""
+    sent = unexpected = 0
+    for trial in trials:
+        for message in trial.get("outbound", []):
+            if not message.get("to", "").startswith("carrier:"):
+                continue
+            sent += 1
+            payload = message.get("payload") or {}
+            unexpected += not CARRIER_NOTICE_CONTRACT_FIELDS.issuperset(payload)
+    return unexpected / sent if sent else 0.0
+
+
+def carrier_notice_outside_contract_stripped_count(trials):
+    """Count stripping events for attempted carrier notices with extra keys."""
+    return sum(
+        event.get("type") == "guard"
+        and event.get("kind") == "pii_stripped"
+        and not CARRIER_NOTICE_CONTRACT_FIELDS.issuperset(event.get("dropped", []))
+        for trial in trials
+        for event in trial.get("events", [])
+    )
+
+
 MONITORS = {
     "escalation_rate": escalation_rate,     # có sẵn; KHÔNG tính là metric mới của đội
     "carrier_recipient_contact_rate": carrier_recipient_contact_rate,
+    "carrier_notice_outside_contract_rate": carrier_notice_outside_contract_rate,
+    "carrier_notice_outside_contract_stripped_count": carrier_notice_outside_contract_stripped_count,
 }
 STARTER_MONITORS = ("escalation_rate",)

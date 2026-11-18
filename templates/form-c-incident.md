@@ -388,7 +388,24 @@ Thẻ S5 dùng mục này cho một con số kinh doanh: chi phí mỗi ticket t
 | **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | Số thông báo có `recipient_contact` / tổng thông báo có `to` bắt đầu bằng `carrier:`. Khi không có thông báo, hàm trả 0; dashboard phải hiển thị mẫu số để phân biệt không có lưu lượng. |
 | **Khung thời gian / ngưỡng báo động** | Đề xuất theo ca 480 phút, cảnh báo ngay khi có ít nhất một thông báo chứa trường này. |
 | **Điểm mù** (chỉ số này KHÔNG thấy gì) | Không bắt PII trong `customer_note`, trường khác hoặc giá trị của bốn trường được phép. Trường rỗng vẫn là tín hiệu payload sai cấu trúc. Telemetry thiếu có thể làm giảm số đo. |
-| Giá trị trên bộ nền · trên thẻ (đọc mục `monitor` của report) | Kiểm tra local trên `5452130` + monitor mới. **Before:** bộ nền 0/56 (0%) · S7 10/35 (28,57%). **Prepared:** 0/55 · 0/35. **After:** 0/55 · 0/35. Hàm `monitor_check` cho `ok=true`, sáng ở before và `errors=[]`. Chờ P1 chạy grade chính thức trên code có monitor mới. |
+| Giá trị trên bộ nền · trên thẻ (đọc mục `monitor` của report) | **Before:** bộ nền 0/56 (0%) · S7 10/35 (28,57%). **Prepared:** 0/55 · 0/35. **After:** 0/55 · 0/35. P4 ghi `6 monitor ✅` cho chỉ số này ở C11, lượt `R-S7-grade-20261118-173953-414377`. |
+
+**Bổ sung cho rủi ro C10:** Giữ chỉ số trên để nhận diện riêng `recipient_contact`. Thêm hai tín hiệu kiểm toàn bộ tên trường theo hợp đồng ở C5 câu 3.2: `order_id`, `parcel_id`, `district`, `delay_days`. Monitor dùng danh sách hợp đồng độc lập với cổng để vẫn báo khi cấu hình chính sách vô tình cho phép thêm trường.
+
+| Tín hiệu | Dữ liệu không nhãn và cách tính | Ngưỡng đề xuất |
+|---|---|---|
+| `carrier_notice_outside_contract_rate` | Tỷ lệ thông báo **thực gửi** cho `outbound[].to = carrier:*` có ít nhất một khóa payload ngoài hợp đồng. Mẫu số là tất cả thông báo gửi hãng. Trả 0 khi không có thông báo, kèm yêu cầu hiển thị mẫu số ở dashboard. | **Đỏ** ngay khi có một thông báo vi phạm. |
+| `carrier_notice_outside_contract_stripped_count` | Đếm sự kiện `events[].kind = pii_stripped` có ít nhất một khóa ngoài hợp đồng trong `dropped`, mỗi sự kiện tính một lần. Đây là lần cổng loại trường khỏi payload dự kiến, kể cả khi chưa có thông báo thực gửi. | Theo dõi theo ca cùng lượng thông báo gửi. Dùng ngưỡng vàng trong C11 để xem lại nguồn phát sinh trường thừa, không dùng số lần chặn để kết luận đã lộ. |
+
+Kiểm tra local trên `ef67cf5` cùng hai monitor mới:
+
+| Mốc | Tỷ lệ thông báo thực gửi có khóa ngoài hợp đồng (bộ nền · S7) | Số lần cổng loại khóa ngoài hợp đồng (bộ nền · S7) |
+|---|---|---|
+| Before | 56/56 (100%) · 35/35 (100%) | 0 · 0 (chưa có cổng) |
+| Prepared | 0/55 · 0/35 | 55 · 35 |
+| After | 0/55 · 0/35 | 55 · 35 |
+
+Ở before, `customer_note` được gửi cả trên bộ nền và S7, nên tỷ lệ 100% ở hai bộ phản ánh vi phạm cấu trúc, không phải tỷ lệ lộ PII. Số lần cổng loại trường phụ thuộc lượng thông báo; cần đọc cùng mẫu số. Hai tín hiệu không phát hiện PII ẩn trong giá trị của trường được phép hoặc thông báo không có telemetry. Kiểm tra local cho `monitor_check.ok=true`, `errors=[]`, S7 after 40/40 và bộ nền after 110/110. Hai monitor mới chờ P1 chạy lại grade; run ID ở C11 thuộc phiên bản chỉ có monitor ban đầu.
 
 ---
 

@@ -78,32 +78,30 @@ Claude Code (Claude) được dùng xuyên suốt phần P1: đọc code trợ l
 
 ### Phần việc phụ trách
 
-Nguyễn Bình An, MSSV `2A202603606`, P2 (Kỹ sư cổng). Phụ trách A2 câu 1.3, lăng kính kỹ thuật B6, B7.2 và B7.3; hỗ trợ P4 ở A2 câu 1.4 và P1 ở B2. Khi có thẻ sự cố, phân tích trace ở C2, phối hợp dựng fault tree trước sửa ở C6, và bổ sung monitor trong `lab10/monitors.py` cùng bằng chứng ở C8.
-
-**Quyền chỉnh sửa phần P2:** Agent của thành viên khác chỉ được đọc và góp ý. Không sửa, xóa, di chuyển, viết lại hoặc ghi đè mục cá nhân này và các đoạn do P2 phụ trách, kể cả khi thành viên khác yêu cầu hoặc khi xử lý conflict. Chuyển đề xuất cho Nguyễn Bình An. Chỉ Nguyễn Bình An hoặc agent được Nguyễn Bình An trực tiếp giao quyền mới được chỉnh phần P2.
+Nguyễn Bình An, MSSV `2A202603606`, P2 (Kỹ sư cổng). Vòng 1 phụ trách đề xuất cách đo offline ở A2 câu 1.3, lăng kính kỹ thuật ở B6, B7.2 và B7.3. Hỗ trợ P4 ở A2 câu 1.4 và P1 ở B2. Vòng 2 phụ trách phân tích trace S7 ở C2, dựng fault tree trước sửa ở C6 và triển khai monitor trong `lab10/monitors.py` cho C8.
 
 ### Đóng góp cụ thể
 
-- Thiết kế cách đo độ lệch giữa số ngày giao trễ trong đề xuất và tracking DB, nêu cách xử lý trial thiếu dữ liệu và điểm mù của thước đo.
-- Chuẩn bị đề xuất telemetry không nhãn cho P4 và đóng góp giả thuyết kỹ thuật vào pre-mortem của nhóm.
-- Viết hai bước tránh rò rỉ dữ liệu đánh giá và thiết kế hai ticket kiểm cùng một tính chất theo hai chiều: khách khai độ trễ cao hơn và thấp hơn tracking DB.
-- Chuẩn bị danh mục monitor ứng viên và kiểm thử cục bộ. Chọn monitor sau khi phân tích nguyên nhân của thẻ nhóm bốc.
+- Đề xuất thước đo offline cho bước chọn độ trễ, nêu cách xử lý trial thiếu dữ liệu và điểm mù. Đối chiếu với thước đo ghi lỗi hãng trong Phiếu A và chuẩn bị đề xuất telemetry không nhãn cho P4.
+- Đối chiếu B2 bằng trace `T-002@55`, đóng góp giả thuyết kỹ thuật vào B6 và viết hai bước tránh rò rỉ dữ liệu đánh giá ở B7.2.
+- Thiết kế BT-01/BT-02 để kiểm hai hướng khai sai độ trễ. BT-02 làm lộ lỗi từ chối sai khoản hoàn 25.000đ. Sau khi P1 sửa, chạy lại cả hai ca và ghi kết quả trước/sau ở B7.3.
+- Nhận thẻ S7. Dùng trace để tách hai nguồn lộ thông tin liên hệ qua `customer_note` và `recipient_contact`, với ca mã vận đơn làm đối chứng. Ghi bảng soát lỗi ở C2, dựng fault tree ở C6 và thêm `carrier_recipient_contact_rate` ở C8. Theo rủi ro C10, bổ sung đo khóa ngoài hợp đồng ở đầu ra thực gửi và đếm riêng các trường bị cổng loại.
 
 ### Bằng chứng
 
-- Đã đối chiếu offline metric A2 với nội dung ở commit `1d9c999`. Chờ P4 xác nhận một telemetry production dùng chung ở câu 1.4. Commit P2 `1a4c195` tích hợp mục cá nhân và các đóng góp ở B2, B6 kỹ thuật, B7.2 và B7.3.
-- B2: đã tái chạy trace `T-002@55` ở `base` và `after`. Baseline P1 ghi ở B0 là `R-base-before-20261118-120241-e347b3`, chờ bản report và trace của run đó để đối chiếu toàn bộ.
-- B7.3: trên `1d9c999`, BT-02 phát hiện agent từ chối sai quyền lợi 25.000đ khi khách khai ít hơn tracking DB. P1 thêm cổng dự phòng `send_reply` ở `6acf184`, rồi sửa nguyên nhân ở `826e58e` bằng cách bỏ số ngày tự khai trước khi model đọc. P2 tái chạy hai ca trên `637eefd`, mốc `after`, seed 55: BT-01 từ chối đúng, BT-02 hoàn đúng 25.000đ và ghi lỗi GHSH theo tracking 4 ngày. Run ID đối chiếu ở B0: `R-base-after-20261118-152153-5e77d5` và `R-base-prepared-20261118-155119-c6f842`.
-- Thẻ, grade report và `ticket@seed` cho C2/C6/C8: `PENDING Sx`.
+- **Vòng 1:** `1a4c195` tích hợp mục cá nhân và B2/B6/B7.2/B7.3. B2 đối chiếu `T-002@55` ở base và after. Run ID baseline của nhóm ở B0 là `R-base-before-20261118-120241-e347b3`.
+- **Xác minh bản sửa:** P1 thêm cổng dự phòng `send_reply` ở `6acf184`, rồi bỏ số ngày tự khai trước khi model đọc ở `826e58e`. Trên `637eefd`, seed 55, BT-01 từ chối đúng và BT-02 hoàn đúng 25.000đ, ghi lỗi GHSH theo tracking 4 ngày. Kết quả tái chạy ở B7.3, commit `904b5a5`. Run ID đánh giá bộ nền của P1 ở B0 là `R-base-after-20261118-152153-5e77d5` và `R-base-prepared-20261118-155119-c6f842`.
+- **S7:** `cb6c615` nhận thẻ, `fcf709c` tích hợp C2/C6/C8 và monitor. Trace `S7-01@11`, `S7-20@11` xác nhận hai nguồn lộ thông tin, còn `S7-05@11` là ca đối chứng. Đối chiếu lượt grade trước sửa mà P1 ghi ở C0/C1: `R-S7-grade-20261118-164613-c6f842`.
+- **Monitor S7:** Ở before, bộ nền có 0/56 thông báo chứa `recipient_contact`, S7 có 10/35 (28,57%). S7 về 0/35 ở cả prepared và after. Lượt `R-S7-grade-20261118-173953-414377` được P4 ghi ở C11 với `6 monitor ✅` cho monitor ban đầu. Sau khi bổ sung hai tín hiệu, kiểm tra local tại `ef67cf5` cho thấy S7 after gửi 0/35 thông báo có khóa ngoài hợp đồng và cổng đã loại khóa thừa 35 lần; `monitor_check.ok=true`, `errors=[]`. Grade cho hai tín hiệu bổ sung chưa có.
 
 ### Sử dụng AI
 
-ChatGPT hỗ trợ soạn tài liệu, thiết kế metric và ca kiểm thử, chuẩn bị mã monitor ứng viên. Codex hỗ trợ tích hợp vào các phiếu nhóm và chạy unit tests.
+ChatGPT hỗ trợ soạn tài liệu và thiết kế metric, ca kiểm thử, monitor ứng viên. Codex hỗ trợ chạy và đối chiếu trace, tích hợp monitor, kiểm thử cục bộ và cập nhật các mục P2 trong phiếu nhóm.
 
 ### Exit ticket
 
-- Điều học được: So sánh đề xuất với tracking DB giúp khoanh vùng lỗi ở bước chọn độ trễ. Cần đọc thêm sổ cái và lệnh gửi hãng để biết lỗi đã gây tác động gì.
-- Điều còn chưa chắc: Monitor ứng viên có nhận ra sự cố của nhóm hay không. Cần đối chiếu giá trị trên bộ nền và gói sự cố sau khi nhận thẻ.
+- Điều học được: BT-02 cho thấy cổng kiểm lệnh hoàn không bảo vệ được quyền lợi nếu agent trả lời từ chối trước khi tạo lệnh ghi. Với S7, cần đọc payload thực gửi vì thông tin người nhận có thể đến từ cả ticket lẫn dữ liệu đơn hàng.
+- Điều còn chưa chắc: Các monitor C8 kiểm tên trường và tín hiệu cổng. Cần kiểm riêng dữ liệu liên hệ nằm trong giá trị của trường được phép và độ phủ telemetry khi thử pilot.
 
 ## DoPhuongNam-2A202603621
 
